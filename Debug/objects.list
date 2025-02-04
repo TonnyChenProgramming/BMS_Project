@@ -1,3 +1,4 @@
+"./Core/Src/buzzer/buzzer.o"
 "./Core/Src/display/oled_display.o"
 "./Core/Src/display/ssd1306.o"
 "./Core/Src/display/ssd1306_fonts.o"

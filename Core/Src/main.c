@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "oled_display.h"
+#include "buzzer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,7 +96,9 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   oled_init();
+  buzzer_init();
 
+  buzzer_off();
   oled_display(voltage,  current, soc,  power);
   /* USER CODE END 2 */
 

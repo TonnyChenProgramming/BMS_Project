@@ -182,8 +182,6 @@ void SystemInit(void)
     #else
         SCB->VTOR = 0x08000000;  // ✅ Always set VTOR to Flash
     #endif
-
-    printf("[DEBUG] SystemInit() - SCB->VTOR Set to: 0x%08lX\n", SCB->VTOR);
 }
 
 /**
