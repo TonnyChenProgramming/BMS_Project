@@ -166,19 +166,24 @@ const uint8_t APBPrescTable[8]  = {0, 0, 0, 0, 1, 2, 3, 4};
   */
 void SystemInit(void)
 {
-  /* FPU settings ------------------------------------------------------------*/
-  #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
-    SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  /* set CP10 and CP11 Full Access */
-  #endif
+    /* FPU settings */
+	printf("[DEBUG] SCB->VTOR: 0x%08lX\n", SCB->VTOR);
+    #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+        SCB->CPACR |= ((3UL << 10*2) | (3UL << 11*2));  /* Set CP10 and CP11 Full Access */
+    #endif
 
-#if defined (DATA_IN_ExtSRAM) || defined (DATA_IN_ExtSDRAM)
-  SystemInit_ExtMemCtl(); 
-#endif /* DATA_IN_ExtSRAM || DATA_IN_ExtSDRAM */
+    #if defined (DATA_IN_ExtSRAM) || defined (DATA_IN_ExtSDRAM)
+        SystemInit_ExtMemCtl();
+    #endif /* DATA_IN_ExtSRAM || DATA_IN_ExtSDRAM */
 
-  /* Configure the Vector Table location -------------------------------------*/
-#if defined(USER_VECT_TAB_ADDRESS)
-  SCB->VTOR = VECT_TAB_BASE_ADDRESS | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM */
-#endif /* USER_VECT_TAB_ADDRESS */
+    /* Configure the Vector Table location */
+    #if defined (USER_VECT_TAB_ADDRESS)
+        SCB->VTOR = VECT_TAB_BASE_ADDRESS | VECT_TAB_OFFSET; /* Vector Table Relocation */
+    #else
+        SCB->VTOR = 0x08000000;  // ✅ Always set VTOR to Flash
+    #endif
+
+    printf("[DEBUG] SystemInit() - SCB->VTOR Set to: 0x%08lX\n", SCB->VTOR);
 }
 
 /**
