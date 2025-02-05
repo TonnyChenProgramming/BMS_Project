@@ -18,15 +18,17 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stdio.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stdio.h"
 #include "oled_display.h"
 #include "buzzer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+#define VREF_ACTUAL 2.94  // Measured VDD
 
 /* USER CODE END PTD */
 
@@ -41,9 +43,13 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+
 I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
+uint32_t adc_voltage_raw = 0;
+
 char buffer[10];
 float voltage = 5.22;
 float current = 1.22;
@@ -55,8 +61,10 @@ float power = 5;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
-
+void Read_Voltage(void);
+void Convert_ADC_To_Voltage(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -94,6 +102,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   oled_init();
   buzzer_init();
@@ -107,7 +116,10 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  Read_Voltage();          // Read ADC raw value
+	  Convert_ADC_To_Voltage(); // Convert ADC value to voltage
+	  oled_display(voltage,  current, soc,  power);
+	  HAL_Delay(1000);  // Wait 1 second before next reading
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -156,6 +168,58 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
 }
 
 /**
@@ -327,6 +391,33 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void Read_Voltage()
+{
+	 adc_voltage_raw = 0;  // Reset previous readings
+
+    // Start ADC Conversion
+    HAL_ADC_Start(&hadc1);
+
+    // Wait for ADC conversion to complete
+    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+
+    // Read ADC value
+    adc_voltage_raw = HAL_ADC_GetValue(&hadc1);
+
+    // Stop ADC after reading
+    HAL_ADC_Stop(&hadc1);
+}
+void Convert_ADC_To_Voltage()
+{
+    // Convert raw ADC value to actual voltage
+    float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL) / 4096.0;  // Assuming 3.3V reference
+
+    // Reverse the voltage divider calculation
+    voltage = adc_voltage * 1.5;  // Multiply by (R1 + R2) / R2
+
+    // Print the result
+    printf("ADC Voltage: %.2fV, Battery Voltage: %.2fV\n", adc_voltage, voltage);
+}
 
 /* USER CODE END 4 */
 
