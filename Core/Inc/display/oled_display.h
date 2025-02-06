@@ -5,6 +5,7 @@
 
 // Function prototypes
 void oled_init(void);
-void oled_display(float voltage,float current, float soc, float power);
+void oled_display(float voltage,float current, int soc, float power,float temperature,int soh,
+		char* status, int hours, int minutes);
 
 #endif /* OLED_DISPLAY_H */

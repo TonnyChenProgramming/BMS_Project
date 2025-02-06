@@ -56,13 +56,13 @@ uint32_t adc_current_raw = 0;
 
 float voltage = 5.22;
 float current = 1.22;
-//float temperature = 25.0;
+float temperature = 25.0;
 float power = 5;
 int soc = 30;
-//int soh = 20;
-//char* status = "Charging";
-//int hours = 2;
-//int minutes = 30;
+int soh = 20;
+char* status = "Charging";
+int hours = 2;
+int minutes = 30;
 
 /* USER CODE END PV */
 
@@ -121,7 +121,7 @@ int main(void)
   buzzer_init();
 
   buzzer_off();
-  oled_display(voltage,  current,soc,power);
+  oled_display(voltage,  current,soc,power,temperature,soh, status, hours, minutes);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -137,7 +137,7 @@ int main(void)
 	  Read_Current();
 	  Convert_ADC_To_Current();
 	  power = voltage * current;
-	  oled_display(voltage, current,soc,power);
+	  oled_display(voltage, current,soc,power,temperature,soh, status, hours, minutes);
 	  HAL_Delay(500);
   }
   /* USER CODE END 3 */

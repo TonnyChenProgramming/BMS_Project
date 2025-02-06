@@ -9,9 +9,10 @@ void oled_init(void) {
 }
 
 // OLED Data Display Function
-void oled_display(float voltage,float current, float soc, float power)
+void oled_display(float voltage,float current, int soc, float power, float temperature,
+		int soh, char* status, int hours, int minutes)
  {
-    char buffer[10];
+    char buffer[30];
 
     //for debugging
     //printf("Checking OLED at I2C Address: 0x%X\n", (SSD1306_I2C_ADDR << 1));
@@ -27,25 +28,34 @@ void oled_display(float voltage,float current, float soc, float power)
 
     ssd1306_Fill(Black);
 
-        // Print Voltage
-            sprintf(buffer, "V: %.2fV", voltage);
-            ssd1306_SetCursor(2, 2);
-            ssd1306_WriteString(buffer, Font_6x8, White);
+    // Voltage and Temperature Line
+        sprintf(buffer, "V: %.2fV  T: %.1fC", voltage, temperature);
+        ssd1306_SetCursor(2, 2);
+        ssd1306_WriteString(buffer, Font_6x8, White);
 
-            // Print Current
-            sprintf(buffer, "I: %.2fA", current);
-            ssd1306_SetCursor(2, 12);
-            ssd1306_WriteString(buffer, Font_6x8, White);
 
-            // Print State of Charge (SOC)
-            sprintf(buffer, "SOC: %.1f%%", soc);
+        // Current and Power Line
+        sprintf(buffer, "I: %.2fA P: %.2fW", current, power);
+        ssd1306_SetCursor(2, 12);
+        ssd1306_WriteString(buffer, Font_6x8, White);
+
+            // SOC and SOH Line
+            snprintf(buffer, sizeof(buffer), "SOC: %d%%  SOH: %d%%", soc, soh);
+
             ssd1306_SetCursor(2, 22);
             ssd1306_WriteString(buffer, Font_6x8, White);
 
-            // Print Power
-            sprintf(buffer, "P: %.2fW", power);
+
+            // Charging/Discharging Status
+            sprintf(buffer, "Status: %s", status);
             ssd1306_SetCursor(2, 32);
             ssd1306_WriteString(buffer, Font_6x8, White);
+
+            // Time Remaining
+             sprintf(buffer, "Time Left: %dh %dm", hours, minutes);
+             ssd1306_SetCursor(2, 42);
+             ssd1306_WriteString(buffer, Font_6x8, White);
+
 
             ssd1306_UpdateScreen();
 

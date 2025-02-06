@@ -1,2 +1,2 @@
 ../Core/Src/display/oled_display.c:7:6:oled_init	8	static
-../Core/Src/display/oled_display.c:12:6:oled_display	48	static
+../Core/Src/display/oled_display.c:12:6:oled_display	88	static

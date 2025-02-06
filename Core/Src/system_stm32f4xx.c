@@ -167,7 +167,7 @@ const uint8_t APBPrescTable[8]  = {0, 0, 0, 0, 1, 2, 3, 4};
 void SystemInit(void)
 {
     /* FPU settings */
-	printf("[DEBUG] SCB->VTOR: 0x%08lX\n", SCB->VTOR);
+	//printf("[DEBUG] SCB->VTOR: 0x%08lX\n", SCB->VTOR);
     #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
         SCB->CPACR |= ((3UL << 10*2) | (3UL << 11*2));  /* Set CP10 and CP11 Full Access */
     #endif
