@@ -28,8 +28,10 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define VREF_ACTUAL 2.94  // Measured VDD
-
+#define VREF_ACTUAL1 2.94  // Measured VDD
+#define VREF_ACTUAL2 5.2
+#define ZERO_CURRENT_OFFSET 2.6
+#define sensitivity ((0.185/5)*VREF_ACTUAL2)
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -44,17 +46,24 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
 
 I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
 uint32_t adc_voltage_raw = 0;
+uint32_t adc_current_raw = 0;
 
-char buffer[10];
 float voltage = 5.22;
 float current = 1.22;
-float soc = 70.5;
+//float temperature = 25.0;
 float power = 5;
+int soc = 30;
+//int soh = 20;
+//char* status = "Charging";
+//int hours = 2;
+//int minutes = 30;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,9 +71,12 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
 void Read_Voltage(void);
 void Convert_ADC_To_Voltage(void);
+void Read_Current(void);
+void Convert_ADC_To_Current(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -103,12 +115,13 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_ADC1_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   oled_init();
   buzzer_init();
 
   buzzer_off();
-  oled_display(voltage,  current, soc,  power);
+  oled_display(voltage,  current,soc,power);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -116,11 +129,16 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  Read_Voltage();          // Read ADC raw value
-	  Convert_ADC_To_Voltage(); // Convert ADC value to voltage
-	  oled_display(voltage,  current, soc,  power);
-	  HAL_Delay(1000);  // Wait 1 second before next reading
+
+
     /* USER CODE BEGIN 3 */
+	   Read_Voltage();
+	  Convert_ADC_To_Voltage();
+	  Read_Current();
+	  Convert_ADC_To_Current();
+	  power = voltage * current;
+	  oled_display(voltage, current,soc,power);
+	  HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }
@@ -211,7 +229,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -219,6 +237,58 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc2.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc2.Init.ScanConvMode = DISABLE;
+  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DMAContinuousRequests = DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
 
 }
 
@@ -410,13 +480,33 @@ void Read_Voltage()
 void Convert_ADC_To_Voltage()
 {
     // Convert raw ADC value to actual voltage
-    float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL) / 4096.0;  // Assuming 3.3V reference
+    float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL1) / 4096.0;  // Assuming 3.3V reference
 
     // Reverse the voltage divider calculation
     voltage = adc_voltage * 1.5;  // Multiply by (R1 + R2) / R2
 
     // Print the result
     printf("ADC Voltage: %.2fV, Battery Voltage: %.2fV\n", adc_voltage, voltage);
+}
+void Read_Current()
+{
+    adc_current_raw = 0;
+
+    HAL_ADC_Start(&hadc2);
+    HAL_ADC_PollForConversion(&hadc2, HAL_MAX_DELAY);
+    adc_current_raw = HAL_ADC_GetValue(&hadc2);
+    HAL_ADC_Stop(&hadc2);
+
+    printf("ADC Raw Value: %lu\n", adc_current_raw);  // Debug print
+}
+
+void Convert_ADC_To_Current()
+{
+	float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4096.0;
+	current = (Vout - 2.6) / sensitivity;
+
+    // Print the result
+    printf("ADC reading voltage : %.2fV, battery current: %.2fA\n", Vout, current);
 }
 
 /* USER CODE END 4 */

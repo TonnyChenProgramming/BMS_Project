@@ -9,7 +9,8 @@ void oled_init(void) {
 }
 
 // OLED Data Display Function
-void oled_display(float voltage, float current, float soc, float power) {
+void oled_display(float voltage,float current, float soc, float power)
+ {
     char buffer[10];
 
     //for debugging
@@ -25,26 +26,27 @@ void oled_display(float voltage, float current, float soc, float power) {
     //}
 
     ssd1306_Fill(Black);
-    // Print Voltage
-        sprintf(buffer, "V: %.2fV", voltage);
-        ssd1306_SetCursor(2, 2);
-        ssd1306_WriteString(buffer, Font_6x8, White);
 
-        // Print Current
-        sprintf(buffer, "I: %.2fA", current);
-        ssd1306_SetCursor(2, 12);
-        ssd1306_WriteString(buffer, Font_6x8, White);
+        // Print Voltage
+            sprintf(buffer, "V: %.2fV", voltage);
+            ssd1306_SetCursor(2, 2);
+            ssd1306_WriteString(buffer, Font_6x8, White);
 
-        // Print State of Charge (SOC)
-        sprintf(buffer, "SOC: %.1f%%", soc);
-        ssd1306_SetCursor(2, 22);
-        ssd1306_WriteString(buffer, Font_6x8, White);
+            // Print Current
+            sprintf(buffer, "I: %.2fA", current);
+            ssd1306_SetCursor(2, 12);
+            ssd1306_WriteString(buffer, Font_6x8, White);
 
-        // Print Power
-        sprintf(buffer, "P: %.2fW", power);
-        ssd1306_SetCursor(2, 32);
-        ssd1306_WriteString(buffer, Font_6x8, White);
+            // Print State of Charge (SOC)
+            sprintf(buffer, "SOC: %.1f%%", soc);
+            ssd1306_SetCursor(2, 22);
+            ssd1306_WriteString(buffer, Font_6x8, White);
 
+            // Print Power
+            sprintf(buffer, "P: %.2fW", power);
+            ssd1306_SetCursor(2, 32);
+            ssd1306_WriteString(buffer, Font_6x8, White);
 
-    ssd1306_UpdateScreen();
+            ssd1306_UpdateScreen();
+
 }
