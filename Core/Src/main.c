@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "math.h"
 #include "oled_display.h"
 #include "buzzer.h"
 /* USER CODE END Includes */
@@ -30,8 +31,15 @@
 /* USER CODE BEGIN PTD */
 #define VREF_ACTUAL1 2.94  // Measured VDD
 #define VREF_ACTUAL2 5.2
+
+// current sensing constants
 #define ZERO_CURRENT_OFFSET 2.6
-#define sensitivity ((0.185/5)*VREF_ACTUAL2)
+#define SENSITIVITY ((0.185/5)*VREF_ACTUAL2)
+
+//temperature sensing constants
+#define UPPER_RESISTANCE 10000
+#define BETA_NTC 4100
+#define ROOM_TEMPERATURE 298.15
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -51,18 +59,19 @@ ADC_HandleTypeDef hadc2;
 I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
+
 uint32_t adc_voltage_raw = 0;
 uint32_t adc_current_raw = 0;
-
-float voltage = 5.22;
-float current = 1.22;
-float temperature = 25.0;
-float power = 5;
-int soc = 30;
-int soh = 20;
+uint32_t adc_temperature_raw = 0;
+float voltage = 0.0;
+float current = 0.0;
+float temperature = 0.0;
+float power = 0.0;
+int soc = 0;
+int soh = 0;
 char* status = "Charging";
-int hours = 2;
-int minutes = 30;
+int hours = 0;
+int minutes = 0;
 
 /* USER CODE END PV */
 
@@ -73,10 +82,16 @@ static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
+void Start_Voltage_Current_Measurement(void);
+void Configure_To_Voltage_Channel(void);
+void Reconfigure_To_Temperature_Channel(void);
+void Read_Voltage_Current(void);
 void Read_Voltage(void);
 void Convert_ADC_To_Voltage(void);
 void Read_Current(void);
 void Convert_ADC_To_Current(void);
+void Read_Temperature(void);
+void Convert_ADC_To_Temperature(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -117,6 +132,7 @@ int main(void)
   MX_ADC1_Init();
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
+
   oled_init();
   buzzer_init();
 
@@ -130,13 +146,23 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-
     /* USER CODE BEGIN 3 */
-	   Read_Voltage();
+
+	  // read voltage
+	  Configure_To_Voltage_Channel();
+	  Read_Voltage();
 	  Convert_ADC_To_Voltage();
+
+	  //read current
 	  Read_Current();
 	  Convert_ADC_To_Current();
 	  power = voltage * current;
+
+	  //read temperature
+	  Reconfigure_To_Temperature_Channel();
+	  Read_Temperature();
+	  Convert_ADC_To_Temperature();
+
 	  oled_display(voltage, current,soc,power,temperature,soh, status, hours, minutes);
 	  HAL_Delay(500);
   }
@@ -200,7 +226,6 @@ static void MX_ADC1_Init(void)
 
   /* USER CODE END ADC1_Init 0 */
 
-  ADC_ChannelConfTypeDef sConfig = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
 
@@ -225,15 +250,6 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
 
-  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
-  sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
@@ -461,6 +477,71 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void Start_Voltage_Current_Measurement()
+{
+    ADC_ChannelConfTypeDef sConfig1 = {0}; // Separate struct for ADC1
+    ADC_ChannelConfTypeDef sConfig2 = {0}; // Separate struct for ADC2
+
+    // Configure ADC1 for PA1 (Voltage)
+    sConfig1.Channel = ADC_CHANNEL_1;
+    sConfig1.Rank = 1;
+    sConfig1.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+    HAL_ADC_ConfigChannel(&hadc1, &sConfig1);
+
+    // Configure ADC2 for PA2 (Current)
+    sConfig2.Channel = ADC_CHANNEL_2;
+    sConfig2.Rank = 1;
+    sConfig2.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+    HAL_ADC_ConfigChannel(&hadc2, &sConfig2);
+
+    // Start only ADC1, and it will automatically trigger ADC2 in dual mode
+    HAL_ADC_Start(&hadc1);
+    if (__HAL_ADC_GET_FLAG(&hadc2, ADC_FLAG_EOC) == RESET) {
+        printf("ADC2 is NOT converting! Multi-mode may be broken.\n");
+    }
+}
+
+
+void Configure_To_Voltage_Channel(void)
+{
+    // Switch ADC1 to PA1 (Voltage)
+    ADC_ChannelConfTypeDef sConfig1 = {0}; // Use a local struct
+    sConfig1.Channel = ADC_CHANNEL_1;
+    sConfig1.Rank = 1;
+    sConfig1.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+}
+void Read_Voltage_Current()
+{
+    // Wait for ADC1 conversion to complete (ADC2 is triggered automatically)
+    if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK)
+    {
+        // Read the combined result from ADC Multi-mode
+        uint32_t dualADCData = HAL_ADCEx_MultiModeGetValue(&hadc1);
+
+        if (dualADCData == 0) {
+            printf("Error: CDR is 0. Multi-mode may not be configured properly.\n");
+        }
+
+        adc_voltage_raw = (dualADCData & 0xFFFF);   // ADC1 (Voltage)
+        adc_current_raw = (dualADCData >> 16);      // ADC2 (Current)
+
+        // Convert ADC values
+        float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0;
+        voltage = adc_voltage * 1.5;
+
+        float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
+        current = (Vout - ZERO_CURRENT_OFFSET) / SENSITIVITY;
+
+        // Debug print
+        printf("Voltage: %.2fV, Current: %.2fA\n", voltage, current);
+    }
+}
 void Read_Voltage()
 {
 	 adc_voltage_raw = 0;  // Reset previous readings
@@ -480,7 +561,7 @@ void Read_Voltage()
 void Convert_ADC_To_Voltage()
 {
     // Convert raw ADC value to actual voltage
-    float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL1) / 4096.0;  // Assuming 3.3V reference
+    float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0;  // Assuming 3.3V reference
 
     // Reverse the voltage divider calculation
     voltage = adc_voltage * 1.5;  // Multiply by (R1 + R2) / R2
@@ -502,13 +583,60 @@ void Read_Current()
 
 void Convert_ADC_To_Current()
 {
-	float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4096.0;
-	current = (Vout - 2.6) / sensitivity;
+	float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
+	current = (Vout - 2.6) / SENSITIVITY;
 
     // Print the result
     printf("ADC reading voltage : %.2fV, battery current: %.2fA\n", Vout, current);
 }
 
+void Reconfigure_To_Temperature_Channel()
+{
+
+    // Switch ADC1 to PA3 (Temperature)
+    ADC_ChannelConfTypeDef sConfig1 = {0}; // Use a local struct
+    sConfig1.Channel = ADC_CHANNEL_3;
+    sConfig1.Rank = 1;
+    sConfig1.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+}
+
+void Read_Temperature(void)
+{
+   adc_temperature_raw = 0;  // Reset previous readings
+
+   // Start ADC Conversion
+   HAL_ADC_Start(&hadc1);
+
+   // Wait for ADC conversion to complete
+   HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+
+   // Read ADC value
+   adc_temperature_raw = HAL_ADC_GetValue(&hadc1);
+
+   // Stop ADC after reading
+   HAL_ADC_Stop(&hadc1);
+}
+
+void Convert_ADC_To_Temperature()
+{
+	float Vntc = ((float)adc_temperature_raw * VREF_ACTUAL1) / 4095.0;
+	float Rntc = (Vntc * UPPER_RESISTANCE)/(VREF_ACTUAL1 - Vntc);
+
+	float log_term = log(Rntc / UPPER_RESISTANCE);
+	float inv_temp = (log_term / BETA_NTC + 1 / ROOM_TEMPERATURE);
+	float temp_kelvin = 1.0 / inv_temp; // Avoid direct computation
+	temperature = temp_kelvin - 273.15f;
+
+
+    // Print the result
+    printf("Temperature Sensing voltage : %.2fV, temperature: %.2fc\n", Vntc, temperature);
+}
 /* USER CODE END 4 */
 
 /**
