@@ -40,6 +40,8 @@
 #define UPPER_RESISTANCE 10000
 #define BETA_NTC 4100
 #define ROOM_TEMPERATURE 298.15
+
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -55,11 +57,14 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
+DMA_HandleTypeDef hdma_adc1;
 
 I2C_HandleTypeDef hi2c1;
 
-/* USER CODE BEGIN PV */
+TIM_HandleTypeDef htim2;
 
+/* USER CODE BEGIN PV */
+uint32_t dma_adc_buffer[10] ={0,0,0,0,0,0,0,0,0,0};
 uint32_t adc_voltage_raw = 0;
 uint32_t adc_current_raw = 0;
 uint32_t adc_temperature_raw = 0;
@@ -73,25 +78,31 @@ char* status = "Charging";
 int hours = 0;
 int minutes = 0;
 
+//conversion flags
+volatile uint8_t voltage_and_current_reading_flag = 0;
+volatile uint8_t temperature_counter = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
-void Start_Voltage_Current_Measurement(void);
-void Configure_To_Voltage_Channel(void);
 void Reconfigure_To_Temperature_Channel(void);
+void Reconfig_To_Voltage_Current_Dual_Reading(void);
 void Read_Voltage_Current(void);
-void Read_Voltage(void);
-void Convert_ADC_To_Voltage(void);
-void Read_Current(void);
-void Convert_ADC_To_Current(void);
 void Read_Temperature(void);
+void Convert_ADC_To_Voltage(void);
+void Convert_ADC_To_Current(void);
 void Convert_ADC_To_Temperature(void);
+void Test_DMA_ADC_Settings(void);
+
+
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -128,16 +139,28 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-
+	printf("DMA PeriphDataAlignment = %d\n", hdma_adc1.Init.PeriphDataAlignment);
+	printf("DMA MemDataAlignment = %d\n", hdma_adc1.Init.MemDataAlignment);
+	printf("DMA_PDATAALIGN_WORD = 0x%08lX\n", DMA_PDATAALIGN_WORD);
+	printf("DMA_MDATAALIGN_WORD = 0x%08lX\n", DMA_MDATAALIGN_WORD);
+  /* Initialize OLED and Buzzer*/
   oled_init();
   buzzer_init();
 
-  buzzer_off();
-  oled_display(voltage,  current,soc,power,temperature,soh, status, hours, minutes);
+  /* Start Timer2 to trigger ADC conversions every 100ms */
+  HAL_TIM_Base_Start(&htim2);
+
+  /* Enable ADC DMA */
+  HAL_ADC_Start(&hadc2);
+
+  HAL_ADC_Start_DMA(&hadc1, dma_adc_buffer, 4);  // ✅ Capture 4 words per DMA burst // Use DMA for ADC1
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -147,24 +170,11 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-	  // read voltage
-	  Configure_To_Voltage_Channel();
-	  Read_Voltage();
-	  Convert_ADC_To_Voltage();
-
-	  //read current
-	  Read_Current();
-	  Convert_ADC_To_Current();
-	  power = voltage * current;
-
-	  //read temperature
-	  Reconfigure_To_Temperature_Channel();
-	  Read_Temperature();
-	  Convert_ADC_To_Temperature();
-
-	  oled_display(voltage, current,soc,power,temperature,soh, status, hours, minutes);
-	  HAL_Delay(500);
+	    if (voltage_and_current_reading_flag)
+	    {
+	        voltage_and_current_reading_flag = 0;  // ✅ Reset flag
+	        Test_DMA_ADC_Settings();  // ✅ Only process fresh ADC values
+	    }
   }
   /* USER CODE END 3 */
 }
@@ -226,6 +236,8 @@ static void MX_ADC1_Init(void)
 
   /* USER CODE END ADC1_Init 0 */
 
+  ADC_MultiModeTypeDef multimode = {0};
+  ADC_ChannelConfTypeDef sConfig = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
 
@@ -239,18 +251,38 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ScanConvMode = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T2_TRGO;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
   }
 
+  /** Configure the ADC multi-mode
+  */
+  multimode.Mode = ADC_DUALMODE_REGSIMULT;
+  multimode.DMAAccessMode = ADC_DMAACCESSMODE_2;
+  multimode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_5CYCLES;
+  if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN ADC1_Init 2 */
+
 
   /* USER CODE END ADC1_Init 2 */
 
@@ -282,8 +314,6 @@ static void MX_ADC2_Init(void)
   hadc2.Init.ScanConvMode = DISABLE;
   hadc2.Init.ContinuousConvMode = DISABLE;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
-  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc2.Init.NbrOfConversion = 1;
   hadc2.Init.DMAContinuousRequests = DISABLE;
@@ -297,12 +327,15 @@ static void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN ADC2_Init 2 */
+
+  // Step 2: Start ADC2 in normal mode before enabling ADC1 dual mode
+
 
   /* USER CODE END ADC2_Init 2 */
 
@@ -339,6 +372,67 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 8399;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 999;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 }
 
@@ -477,121 +571,54 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void Start_Voltage_Current_Measurement()
+
+
+void Reconfig_To_Voltage_Current_Dual_Reading(void)
 {
-    ADC_ChannelConfTypeDef sConfig1 = {0}; // Separate struct for ADC1
-    ADC_ChannelConfTypeDef sConfig2 = {0}; // Separate struct for ADC2
+	// Step 1: Re-enable Dual Mode (ADC1 = Voltage, ADC2 = Current)
+	    ADC_MultiModeTypeDef multimode = {0};
+	    multimode.Mode = ADC_DUALMODE_REGSIMULT;  // Set Dual Simultaneous Mode
+	    if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
+	        {
+	            Error_Handler();
+	        }
+	    // Step 2: Configure ADC1 for Voltage (PA1)
+	    ADC_ChannelConfTypeDef sConfig1 = {0};
+	    sConfig1.Channel = ADC_CHANNEL_1;
+	    sConfig1.Rank = 1;
+	    sConfig1.SamplingTime = ADC_SAMPLETIME_15CYCLES;
 
-    // Configure ADC1 for PA1 (Voltage)
-    sConfig1.Channel = ADC_CHANNEL_1;
-    sConfig1.Rank = 1;
-    sConfig1.SamplingTime = ADC_SAMPLETIME_15CYCLES;
-    HAL_ADC_ConfigChannel(&hadc1, &sConfig1);
+	    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig1) != HAL_OK)
+	    {
+	        Error_Handler();
+	    }
+	    // Step 3: Restart ADC1 in Interrupt Mode (TIM2 will trigger ADC1 again)
+	        HAL_ADC_Start_IT(&hadc1);
 
-    // Configure ADC2 for PA2 (Current)
-    sConfig2.Channel = ADC_CHANNEL_2;
-    sConfig2.Rank = 1;
-    sConfig2.SamplingTime = ADC_SAMPLETIME_15CYCLES;
-    HAL_ADC_ConfigChannel(&hadc2, &sConfig2);
-
-    // Start only ADC1, and it will automatically trigger ADC2 in dual mode
-    HAL_ADC_Start(&hadc1);
-    if (__HAL_ADC_GET_FLAG(&hadc2, ADC_FLAG_EOC) == RESET) {
-        printf("ADC2 is NOT converting! Multi-mode may be broken.\n");
-    }
+	    // Step 4: Restart TIM2 (Triggers ADC1 Every 100ms)
+	        HAL_TIM_Base_Start(&htim2);
 }
 
 
-void Configure_To_Voltage_Channel(void)
+
+
+
+
+void Reconfigure_To_Temperature_Channel(void)
 {
-    // Switch ADC1 to PA1 (Voltage)
-    ADC_ChannelConfTypeDef sConfig1 = {0}; // Use a local struct
-    sConfig1.Channel = ADC_CHANNEL_1;
-    sConfig1.Rank = 1;
-    sConfig1.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+    // Step 1: Stop TIM2 (Prevents ADC1 from being triggered every 100ms)
+    HAL_TIM_Base_Stop(&htim2);
 
-    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig1) != HAL_OK)
-    {
-      Error_Handler();
-    }
+    // Step 2: Stop ADC1 Interrupt Mode (Prevents ADC1 ISR from running)
+    HAL_ADC_Stop_IT(&hadc1);
 
-}
-void Read_Voltage_Current()
-{
-    // Wait for ADC1 conversion to complete (ADC2 is triggered automatically)
-    if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK)
-    {
-        // Read the combined result from ADC Multi-mode
-        uint32_t dualADCData = HAL_ADCEx_MultiModeGetValue(&hadc1);
-
-        if (dualADCData == 0) {
-            printf("Error: CDR is 0. Multi-mode may not be configured properly.\n");
-        }
-
-        adc_voltage_raw = (dualADCData & 0xFFFF);   // ADC1 (Voltage)
-        adc_current_raw = (dualADCData >> 16);      // ADC2 (Current)
-
-        // Convert ADC values
-        float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0;
-        voltage = adc_voltage * 1.5;
-
-        float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
-        current = (Vout - ZERO_CURRENT_OFFSET) / SENSITIVITY;
-
-        // Debug print
-        printf("Voltage: %.2fV, Current: %.2fA\n", voltage, current);
-    }
-}
-void Read_Voltage()
-{
-	 adc_voltage_raw = 0;  // Reset previous readings
-
-    // Start ADC Conversion
-    HAL_ADC_Start(&hadc1);
-
-    // Wait for ADC conversion to complete
-    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-
-    // Read ADC value
-    adc_voltage_raw = HAL_ADC_GetValue(&hadc1);
-
-    // Stop ADC after reading
-    HAL_ADC_Stop(&hadc1);
-}
-void Convert_ADC_To_Voltage()
-{
-    // Convert raw ADC value to actual voltage
-    float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0;  // Assuming 3.3V reference
-
-    // Reverse the voltage divider calculation
-    voltage = adc_voltage * 1.5;  // Multiply by (R1 + R2) / R2
-
-    // Print the result
-    printf("ADC Voltage: %.2fV, Battery Voltage: %.2fV\n", adc_voltage, voltage);
-}
-void Read_Current()
-{
-    adc_current_raw = 0;
-
-    HAL_ADC_Start(&hadc2);
-    HAL_ADC_PollForConversion(&hadc2, HAL_MAX_DELAY);
-    adc_current_raw = HAL_ADC_GetValue(&hadc2);
+    // Step 3: Stop ADC2 (Since it's paired with ADC1 in Dual Mode)
     HAL_ADC_Stop(&hadc2);
 
-    printf("ADC Raw Value: %lu\n", adc_current_raw);  // Debug print
-}
-
-void Convert_ADC_To_Current()
-{
-	float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
-	current = (Vout - 2.6) / SENSITIVITY;
-
-    // Print the result
-    printf("ADC reading voltage : %.2fV, battery current: %.2fA\n", Vout, current);
-}
-
-void Reconfigure_To_Temperature_Channel()
-{
+    // Step 4: Disable Dual Mode (Switch ADC1 to Independent Mode)
+    ADC_MultiModeTypeDef multimode = {0};
+    multimode.Mode = ADC_MODE_INDEPENDENT;
+    HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode);
 
     // Switch ADC1 to PA3 (Temperature)
     ADC_ChannelConfTypeDef sConfig1 = {0}; // Use a local struct
@@ -604,6 +631,24 @@ void Reconfigure_To_Temperature_Channel()
       Error_Handler();
     }
 
+}
+
+void Read_Voltage_Current(void)
+{
+	// Read Voltage & Current (Dual Mode ADC)
+	uint32_t dualADCData = HAL_ADCEx_MultiModeGetValue(&hadc1);
+	adc_voltage_raw = (dualADCData & 0xFFFF);   // ADC1 (Voltage)
+	adc_current_raw = (dualADCData >> 16);      // ADC2 (Current)
+	printf("ADC1_SR: 0x%08lX\n", ADC1->SR);
+	printf("ADC2_SR: 0x%08lX\n", ADC2->SR);
+	printf("TIM2_CR2: 0x%08lX\n", TIM2->CR2);
+	printf("TIM2_SR: 0x%08lX\n", TIM2->SR);
+	printf("ADC_CCR: 0x%08lX\n", *(volatile uint32_t*)0x40012304);
+	printf("ADC_CDR: 0x%08lX\n", *(volatile uint32_t*)0x40012308);
+	printf("NVIC_ISER: 0x%08lX\n", NVIC->ISER[0]);  // Check if ADC IRQ is enabled
+	Convert_ADC_To_Voltage();
+	Convert_ADC_To_Current();
+	power = voltage * current;
 }
 
 void Read_Temperature(void)
@@ -621,21 +666,90 @@ void Read_Temperature(void)
 
    // Stop ADC after reading
    HAL_ADC_Stop(&hadc1);
+
+   //get the temperature value
+   Convert_ADC_To_Temperature();
+}
+void Convert_ADC_To_Voltage(void)
+{
+    // Convert raw ADC value to actual voltage
+    float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0;  // Assuming 3.3V reference
+
+    // Reverse the voltage divider calculation
+    voltage = adc_voltage * 1.5;  // Multiply by (R1 + R2) / R2
+
 }
 
-void Convert_ADC_To_Temperature()
+
+void Convert_ADC_To_Current(void)
+{
+	float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
+	current = (Vout - 2.6) / SENSITIVITY;
+
+}
+void Convert_ADC_To_Temperature(void)
 {
 	float Vntc = ((float)adc_temperature_raw * VREF_ACTUAL1) / 4095.0;
 	float Rntc = (Vntc * UPPER_RESISTANCE)/(VREF_ACTUAL1 - Vntc);
 
-	float log_term = log(Rntc / UPPER_RESISTANCE);
-	float inv_temp = (log_term / BETA_NTC + 1 / ROOM_TEMPERATURE);
-	float temp_kelvin = 1.0 / inv_temp; // Avoid direct computation
-	temperature = temp_kelvin - 273.15f;
+	temperature = (1.0 / ((log(Rntc / UPPER_RESISTANCE) / BETA_NTC) + (1.0 / ROOM_TEMPERATURE))) - 273.15f;
 
+}
+void Test_DMA_ADC_Settings(void)
+{
+    static uint32_t last_timestamp = 0;  // Track last update time
+    uint32_t current_time = HAL_GetTick();  // Get system time in milliseconds
 
-    // Print the result
-    printf("Temperature Sensing voltage : %.2fV, temperature: %.2fc\n", Vntc, temperature);
+    // ✅ Only process every 400ms (matching OLED update rate)
+    if (current_time - last_timestamp >= 400)
+    {
+        last_timestamp = current_time;  // Update timestamp
+
+        // ✅ Check if DMA buffer is receiving 4 words
+        printf("DMA Buffer: %lu %lu %lu %lu\n", dma_adc_buffer[0], dma_adc_buffer[1], dma_adc_buffer[2], dma_adc_buffer[3]);
+
+        // ✅ Extract & Print ADC values for verification
+        for (int i = 0; i < 4; i++)
+        {
+            uint32_t dualADCData = dma_adc_buffer[i];
+
+            uint16_t voltage_raw = (dualADCData & 0xFFFF);
+            uint16_t current_raw = (dualADCData >> 16);
+
+            float voltage = ((float)voltage_raw * VREF_ACTUAL1) / 4095.0 * 1.5;
+            float current = ((float)current_raw * VREF_ACTUAL1) / 4095.0;  // Modify scaling based on actual sensor
+
+            printf("Sample %d -> Voltage: %.2fV, Current: %.2fA\n", i, voltage, current);
+        }
+        printf("\n");  // New line for readability
+    }
+}
+void Debug_Check_SFRs(void)
+{
+    printf("\n**DEBUG SFRs:**\n");
+
+    // ADC1 Status Registers
+    printf("ADC1_SR:   0x%08lX\n", ADC1->SR);
+    printf("ADC2_SR:   0x%08lX\n", ADC2->SR);
+    printf("ADC_CCR:   0x%08lX\n", ADC->CCR);  // ADC Common Control Register
+    printf("ADC_CDR:   0x%08lX\n", ADC->CDR);  // ADC Dual Regular Data Register
+
+    // Timer 2 Registers (Trigger Source)
+    printf("TIM2_CR1:  0x%08lX\n", TIM2->CR1);
+    printf("TIM2_CR2:  0x%08lX\n", TIM2->CR2);
+    printf("TIM2_SR:   0x%08lX\n", TIM2->SR);
+
+    // DMA2 Status Registers
+    printf("DMA2_S0CR:  0x%08lX\n", DMA2_Stream0->CR);
+    printf("DMA2_S0NDTR: 0x%08lX\n", DMA2_Stream0->NDTR);
+    printf("DMA2_LISR:  0x%08lX\n", DMA2->LISR);  // Low Interrupt Status Register
+    printf("DMA2_HISR:  0x%08lX\n", DMA2->HISR);  // High Interrupt Status Register
+
+    // NVIC Registers (Interrupts)
+    printf("NVIC_ISER: 0x%08lX\n", NVIC->ISER[0]);  // Interrupt Set Enable Register
+    printf("NVIC_ISPR: 0x%08lX\n", NVIC->ISPR[0]);  // Interrupt Pending Register
+
+    printf("**************************\n");
 }
 /* USER CODE END 4 */
 

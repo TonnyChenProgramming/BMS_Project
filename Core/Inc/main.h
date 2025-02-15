@@ -41,7 +41,11 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+/* Global Variables for ADC Processing */
+extern volatile uint8_t voltage_and_current_reading_flag;
+extern volatile uint8_t temperature_counter;
+extern TIM_HandleTypeDef htim2;
+extern uint32_t dma_adc_buffer[10];
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

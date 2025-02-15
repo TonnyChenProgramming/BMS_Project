@@ -14,49 +14,51 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
  {
     char buffer[30];
 
-    //for debugging
-    //printf("Checking OLED at I2C Address: 0x%X\n", (SSD1306_I2C_ADDR << 1));
+    // **Voltage and Temperature Line**
+    ssd1306_SetCursor(2, 2);
+    sprintf(buffer, "                     "); // Clear previous text
+    ssd1306_WriteString(buffer, Font_6x8, Black);
 
-    //if (HAL_I2C_IsDeviceReady(&hi2c1, (SSD1306_I2C_ADDR << 1), 10, 1000) == HAL_OK)
-    //{
-        //printf("OLED Found at 0x3C!\n");
-    //}
-    //else
-    //{
-        //printf("OLED NOT Found! Check Wiring!\n");
-    //}
+    ssd1306_SetCursor(2, 2);
+    sprintf(buffer, "V: %.2fV  T: %.1fC", voltage, temperature);
+    ssd1306_WriteString(buffer, Font_6x8, White);
 
-    ssd1306_Fill(Black);
+    // **Current and Power Line**
+    ssd1306_SetCursor(2, 12);
+    sprintf(buffer, "                     ");
+    ssd1306_WriteString(buffer, Font_6x8, Black);
 
-    // Voltage and Temperature Line
-        sprintf(buffer, "V: %.2fV  T: %.1fC", voltage, temperature);
-        ssd1306_SetCursor(2, 2);
-        ssd1306_WriteString(buffer, Font_6x8, White);
+    ssd1306_SetCursor(2, 12);
+    sprintf(buffer, "I: %.2fA P: %.2fW", current, power);
+    ssd1306_WriteString(buffer, Font_6x8, White);
 
+    // **SOC and SOH Line**
+    ssd1306_SetCursor(2, 22);
+    sprintf(buffer, "                     ");
+    ssd1306_WriteString(buffer, Font_6x8, Black);
 
-        // Current and Power Line
-        sprintf(buffer, "I: %.2fA P: %.2fW", current, power);
-        ssd1306_SetCursor(2, 12);
-        ssd1306_WriteString(buffer, Font_6x8, White);
+    ssd1306_SetCursor(2, 22);
+    snprintf(buffer, sizeof(buffer), "SOC: %d%%  SOH: %d%%", soc, soh);
+    ssd1306_WriteString(buffer, Font_6x8, White);
 
-            // SOC and SOH Line
-            snprintf(buffer, sizeof(buffer), "SOC: %d%%  SOH: %d%%", soc, soh);
+    // **Charging/Discharging Status**
+    ssd1306_SetCursor(2, 32);
+    sprintf(buffer, "                     ");
+    ssd1306_WriteString(buffer, Font_6x8, Black);
 
-            ssd1306_SetCursor(2, 22);
-            ssd1306_WriteString(buffer, Font_6x8, White);
+    ssd1306_SetCursor(2, 32);
+    sprintf(buffer, "Status: %s", status);
+    ssd1306_WriteString(buffer, Font_6x8, White);
 
+    // **Time Remaining**
+    ssd1306_SetCursor(2, 42);
+    sprintf(buffer, "                     ");
+    ssd1306_WriteString(buffer, Font_6x8, Black);
 
-            // Charging/Discharging Status
-            sprintf(buffer, "Status: %s", status);
-            ssd1306_SetCursor(2, 32);
-            ssd1306_WriteString(buffer, Font_6x8, White);
+    ssd1306_SetCursor(2, 42);
+    sprintf(buffer, "Time Left: %dh %dm", hours, minutes);
+    ssd1306_WriteString(buffer, Font_6x8, White);
 
-            // Time Remaining
-             sprintf(buffer, "Time Left: %dh %dm", hours, minutes);
-             ssd1306_SetCursor(2, 42);
-             ssd1306_WriteString(buffer, Font_6x8, White);
-
-
-            ssd1306_UpdateScreen();
-
+    // **Update OLED screen**
+    ssd1306_UpdateScreen();
 }
