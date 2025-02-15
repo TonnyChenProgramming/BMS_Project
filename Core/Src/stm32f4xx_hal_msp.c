@@ -108,26 +108,30 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
 
     /* ADC1 DMA Init */
     /* ADC1 Init */
-    hdma_adc1.Instance = DMA2_Stream0;
-    hdma_adc1.Init.Channel = DMA_CHANNEL_0;
-    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
-    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
-    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
-    hdma_adc1.Init.Mode = DMA_CIRCULAR;
-    hdma_adc1.Init.Priority = DMA_PRIORITY_LOW;
-    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
-    hdma_adc1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_adc1.Init.PeriphBurst = DMA_PBURST_SINGLE;
-    hdma_adc1.Init.MemBurst = DMA_MBURST_INC4;
-
-    if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
+    if (hadc->Instance == ADC1 && hadc->Init.DMAContinuousRequests == ENABLE)
     {
-      Error_Handler();
+    	hdma_adc1.Instance = DMA2_Stream0;
+    	    hdma_adc1.Init.Channel = DMA_CHANNEL_0;
+    	    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    	    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
+    	    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
+    	    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    	    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+    	    hdma_adc1.Init.Mode = DMA_CIRCULAR;
+    	    hdma_adc1.Init.Priority = DMA_PRIORITY_LOW;
+    	    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+    	    hdma_adc1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+    	    hdma_adc1.Init.PeriphBurst = DMA_PBURST_SINGLE;
+    	    hdma_adc1.Init.MemBurst = DMA_MBURST_INC4;
+
+    	    if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
+    	    {
+    	      Error_Handler();
+    	    }
+
+    	    __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc1);
     }
 
-    __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc1);
 
   /* USER CODE BEGIN ADC1_MspInit 1 */
 

@@ -41,7 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+uint8_t temperature_counter = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -215,10 +215,15 @@ void DMA2_Stream0_IRQHandler(void)
 /* USER CODE BEGIN 1 */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    if (hadc->Instance == ADC1)  // ✅ Ensure callback is triggered by ADC1
+    if (hadc->Instance == ADC1)  // Ensure callback is triggered by ADC1
     {
-        voltage_and_current_reading_flag = 1;  // ✅ Set flag when DMA transfer is done
-        temperature_counter++;  // ✅ Increment temperature counter every 0.4s
+        voltage_and_current_reading_flag = 1;  // Set flag when DMA transfer is done
+        temperature_counter++;  // Increment temperature counter every 0.4s
+        if (temperature_counter >= 13)
+        {
+        	temperature_counter = 0; // reset temperature counter
+        	temperature_update_flag = 1; // set a flag for temperature update
+        }
     }
 }
 

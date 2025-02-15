@@ -72,7 +72,6 @@ uint32_t adc_current_raw = 0;
 uint32_t adc_temperature_raw = 0;
 float voltage = 0.0;
 float current = 0.0;
-float exp_c = 0.0;
 float temperature = 0.0;
 float power = 0.0;
 int soc = 0;
@@ -83,7 +82,7 @@ int minutes = 0;
 
 //conversion flags
 volatile uint8_t voltage_and_current_reading_flag = 0;
-volatile uint8_t temperature_counter = 0;
+volatile uint8_t temperature_update_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,13 +94,14 @@ static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
-void Reconfigure_To_Temperature_Channel(void);
-void Reconfig_To_Voltage_Current_Dual_Reading(void);
-void Read_Temperature(void);
+void process_voltage_and_current_data(void);
+void reconfigure_to_temperature_channel(void);
+void reconfigure_to_dual_mode(void);
+void read_temperature(void);
 static inline float convert_adc_raw_voltage(uint32_t adc_voltage_raw);
 static inline float convert_adc_raw_current(uint32_t adc_current_raw);
-void Convert_ADC_To_Temperature(void);
-void process_voltage_and_current_data(void);
+static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw);
+
 
 
 
@@ -158,7 +158,7 @@ int main(void)
   /* Enable ADC DMA */
   HAL_ADC_Start(&hadc2);
 
-  HAL_ADC_Start_DMA(&hadc1, dma_adc_buffer, 8);  // ✅ Capture 4 words per DMA burst // Use DMA for ADC1
+  HAL_ADC_Start_DMA(&hadc1, dma_adc_buffer, 8);  //  Capture 8 words
 
   /* USER CODE END 2 */
 
@@ -174,6 +174,14 @@ int main(void)
 	        voltage_and_current_reading_flag = 0;  // Reset flag
 	        process_voltage_and_current_data();
 	        oled_display(voltage, current, soc, power, temperature, soh, status, hours, minutes);
+	    }
+	    if (temperature_update_flag)
+	    {
+	    	temperature_update_flag = 0;
+	    	reconfigure_to_temperature_channel();
+	    	read_temperature();
+	    	reconfigure_to_dual_mode();
+	    	oled_display(voltage, current, soc, power, temperature, soh, status, hours, minutes);
 	    }
   }
   /* USER CODE END 3 */
@@ -573,30 +581,14 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 
-void Reconfig_To_Voltage_Current_Dual_Reading(void)
+void reconfigure_to_dual_mode(void)
 {
-	// Step 1: Re-enable Dual Mode (ADC1 = Voltage, ADC2 = Current)
-	    ADC_MultiModeTypeDef multimode = {0};
-	    multimode.Mode = ADC_DUALMODE_REGSIMULT;  // Set Dual Simultaneous Mode
-	    if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
-	        {
-	            Error_Handler();
-	        }
-	    // Step 2: Configure ADC1 for Voltage (PA1)
-	    ADC_ChannelConfTypeDef sConfig1 = {0};
-	    sConfig1.Channel = ADC_CHANNEL_1;
-	    sConfig1.Rank = 1;
-	    sConfig1.SamplingTime = ADC_SAMPLETIME_15CYCLES;
-
-	    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig1) != HAL_OK)
-	    {
-	        Error_Handler();
-	    }
-	    // Step 3: Restart ADC1 in Interrupt Mode (TIM2 will trigger ADC1 again)
-	        HAL_ADC_Start_IT(&hadc1);
-
-	    // Step 4: Restart TIM2 (Triggers ADC1 Every 100ms)
-	        HAL_TIM_Base_Start(&htim2);
+	HAL_ADC_DeInit(&hadc1);  // Fully reset ADC1
+	MX_ADC1_Init();
+    //restart dual mode
+    HAL_TIM_Base_Start(&htim2);
+    HAL_ADC_Start(&hadc2);
+    HAL_ADC_Start_DMA(&hadc1, dma_adc_buffer, 8);
 }
 
 
@@ -604,27 +596,44 @@ void Reconfig_To_Voltage_Current_Dual_Reading(void)
 
 
 
-void Reconfigure_To_Temperature_Channel(void)
+void reconfigure_to_temperature_channel(void)
 {
-    // Step 1: Stop TIM2 (Prevents ADC1 from being triggered every 100ms)
-    HAL_TIM_Base_Stop(&htim2);
+	// stop dual mode
+	HAL_ADC_Stop_DMA(&hadc1);
+	HAL_ADC_Stop(&hadc2);
+	HAL_TIM_Base_Stop(&htim2);
 
-    // Step 2: Stop ADC1 Interrupt Mode (Prevents ADC1 ISR from running)
-    HAL_ADC_Stop_IT(&hadc1);
+	//switch ADC1 to independent mode
 
-    // Step 3: Stop ADC2 (Since it's paired with ADC1 in Dual Mode)
-    HAL_ADC_Stop(&hadc2);
+	HAL_ADC_DeInit(&hadc1);  // Fully reset ADC1
 
-    // Step 4: Disable Dual Mode (Switch ADC1 to Independent Mode)
+	hadc1.Instance = ADC1;
+	hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+	hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+	hadc1.Init.ScanConvMode = DISABLE;
+	hadc1.Init.ContinuousConvMode = DISABLE;
+	hadc1.Init.DiscontinuousConvMode = DISABLE;
+	hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+	hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+	hadc1.Init.NbrOfConversion = 1;
+	hadc1.Init.DMAContinuousRequests = DISABLE;
+	hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+
+    HAL_ADC_Init(&hadc1);
+
     ADC_MultiModeTypeDef multimode = {0};
     multimode.Mode = ADC_MODE_INDEPENDENT;
-    HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode);
+    if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
+    {
+        Error_Handler();
+    }
 
     // Switch ADC1 to PA3 (Temperature)
     ADC_ChannelConfTypeDef sConfig1 = {0}; // Use a local struct
     sConfig1.Channel = ADC_CHANNEL_3;
     sConfig1.Rank = 1;
-    sConfig1.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+    sConfig1.SamplingTime = ADC_SAMPLETIME_56CYCLES;
 
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig1) != HAL_OK)
     {
@@ -634,11 +643,12 @@ void Reconfigure_To_Temperature_Channel(void)
 }
 
 
-void Read_Temperature(void)
+void read_temperature(void)
 {
    adc_temperature_raw = 0;  // Reset previous readings
 
    // Start ADC Conversion
+   // ✅ Start ADC Conversion (Software Trigger)
    HAL_ADC_Start(&hadc1);
 
    // Wait for ADC conversion to complete
@@ -651,7 +661,7 @@ void Read_Temperature(void)
    HAL_ADC_Stop(&hadc1);
 
    //get the temperature value
-   Convert_ADC_To_Temperature();
+   temperature = convert_adc_raw_temperature(adc_temperature_raw);
 }
 static inline float convert_adc_raw_voltage(uint32_t adc_voltage_raw) {
     return (((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0 * 1.5);
@@ -662,13 +672,12 @@ static inline float convert_adc_raw_current(uint32_t adc_current_raw) {
     float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
     return (Vout - 2.6) / SENSITIVITY;  // ✅ Only returns the result, no side effects
 }
-void Convert_ADC_To_Temperature(void)
-{
-	float Vntc = ((float)adc_temperature_raw * VREF_ACTUAL1) / 4095.0;
-	float Rntc = (Vntc * UPPER_RESISTANCE)/(VREF_ACTUAL1 - Vntc);
 
-	temperature = (1.0 / ((log(Rntc / UPPER_RESISTANCE) / BETA_NTC) + (1.0 / ROOM_TEMPERATURE))) - 273.15f;
+static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw) {
+    float Vntc = ((float)adc_temperature_raw * VREF_ACTUAL1) / 4095.0;
+    float Rntc = (Vntc * UPPER_RESISTANCE) / (VREF_ACTUAL1 - Vntc);
 
+    return (1.0f / ((log(Rntc / UPPER_RESISTANCE) / BETA_NTC) + (1.0f / ROOM_TEMPERATURE))) - 273.15f;
 }
 
 void process_voltage_and_current_data(void)
