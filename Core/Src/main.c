@@ -72,6 +72,7 @@ uint32_t adc_current_raw = 0;
 uint32_t adc_temperature_raw = 0;
 float voltage = 0.0;
 float current = 0.0;
+float exp_c = 0.0;
 float temperature = 0.0;
 float power = 0.0;
 int soc = 0;
@@ -96,7 +97,6 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 void Reconfigure_To_Temperature_Channel(void);
 void Reconfig_To_Voltage_Current_Dual_Reading(void);
-void Read_Voltage_Current(void);
 void Read_Temperature(void);
 static inline float convert_adc_raw_voltage(uint32_t adc_voltage_raw);
 static inline float convert_adc_raw_current(uint32_t adc_current_raw);
@@ -677,16 +677,25 @@ void process_voltage_and_current_data(void)
 	adc_current_raw_sum = 0;
 	//collect voltage and current raw data, add them to sum for averaging
 
-	for (int counter = 0;counter<9;counter++)
+	for (int counter = 0;counter<8;counter++)
 	{
 		adc_voltage_raw_sum += (dma_adc_buffer[counter] & 0xFFFF);
 		adc_current_raw_sum += (dma_adc_buffer[counter] >> 16);
 	}
 
 	adc_voltage_raw = adc_voltage_raw_sum / 8;
-	adc_current_raw = adc_voltage_raw_sum / 8;
+	adc_current_raw = adc_current_raw_sum / 8;
 	voltage = convert_adc_raw_voltage(adc_voltage_raw);
 	current = convert_adc_raw_current(adc_current_raw);
+	if (current <0)
+	{
+		current = 0.0;
+		status = "Idle";
+	}
+	else
+	{
+		status = "Charging";
+	}
 	power = voltage * current;
 }
 /* USER CODE END 4 */

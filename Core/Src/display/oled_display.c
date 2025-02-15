@@ -25,7 +25,7 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
 
     // **Current and Power Line**
     ssd1306_SetCursor(2, 12);
-    sprintf(buffer, "                  ");
+    sprintf(buffer, "                 ");
     ssd1306_WriteString(buffer, Font_6x8, Black);
 
     ssd1306_SetCursor(2, 12);
