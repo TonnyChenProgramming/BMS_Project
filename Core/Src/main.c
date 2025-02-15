@@ -65,6 +65,8 @@ TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
 uint32_t dma_adc_buffer[10] ={0,0,0,0,0,0,0,0,0,0};
+uint32_t adc_voltage_raw_sum = 0;
+uint32_t adc_current_raw_sum = 0;
 uint32_t adc_voltage_raw = 0;
 uint32_t adc_current_raw = 0;
 uint32_t adc_temperature_raw = 0;
@@ -96,10 +98,10 @@ void Reconfigure_To_Temperature_Channel(void);
 void Reconfig_To_Voltage_Current_Dual_Reading(void);
 void Read_Voltage_Current(void);
 void Read_Temperature(void);
-void Convert_ADC_To_Voltage(void);
-void Convert_ADC_To_Current(void);
+static inline float convert_adc_raw_voltage(uint32_t adc_voltage_raw);
+static inline float convert_adc_raw_current(uint32_t adc_current_raw);
 void Convert_ADC_To_Temperature(void);
-void Test_DMA_ADC_Settings(void);
+void process_voltage_and_current_data(void);
 
 
 
@@ -145,10 +147,7 @@ int main(void)
   MX_ADC2_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-	printf("DMA PeriphDataAlignment = %d\n", hdma_adc1.Init.PeriphDataAlignment);
-	printf("DMA MemDataAlignment = %d\n", hdma_adc1.Init.MemDataAlignment);
-	printf("DMA_PDATAALIGN_WORD = 0x%08lX\n", DMA_PDATAALIGN_WORD);
-	printf("DMA_MDATAALIGN_WORD = 0x%08lX\n", DMA_MDATAALIGN_WORD);
+
   /* Initialize OLED and Buzzer*/
   oled_init();
   buzzer_init();
@@ -159,7 +158,7 @@ int main(void)
   /* Enable ADC DMA */
   HAL_ADC_Start(&hadc2);
 
-  HAL_ADC_Start_DMA(&hadc1, dma_adc_buffer, 4);  // ✅ Capture 4 words per DMA burst // Use DMA for ADC1
+  HAL_ADC_Start_DMA(&hadc1, dma_adc_buffer, 8);  // ✅ Capture 4 words per DMA burst // Use DMA for ADC1
 
   /* USER CODE END 2 */
 
@@ -172,8 +171,9 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	    if (voltage_and_current_reading_flag)
 	    {
-	        voltage_and_current_reading_flag = 0;  // ✅ Reset flag
-	        Test_DMA_ADC_Settings();  // ✅ Only process fresh ADC values
+	        voltage_and_current_reading_flag = 0;  // Reset flag
+	        process_voltage_and_current_data();
+	        oled_display(voltage, current, soc, power, temperature, soh, status, hours, minutes);
 	    }
   }
   /* USER CODE END 3 */
@@ -633,23 +633,6 @@ void Reconfigure_To_Temperature_Channel(void)
 
 }
 
-void Read_Voltage_Current(void)
-{
-	// Read Voltage & Current (Dual Mode ADC)
-	uint32_t dualADCData = HAL_ADCEx_MultiModeGetValue(&hadc1);
-	adc_voltage_raw = (dualADCData & 0xFFFF);   // ADC1 (Voltage)
-	adc_current_raw = (dualADCData >> 16);      // ADC2 (Current)
-	printf("ADC1_SR: 0x%08lX\n", ADC1->SR);
-	printf("ADC2_SR: 0x%08lX\n", ADC2->SR);
-	printf("TIM2_CR2: 0x%08lX\n", TIM2->CR2);
-	printf("TIM2_SR: 0x%08lX\n", TIM2->SR);
-	printf("ADC_CCR: 0x%08lX\n", *(volatile uint32_t*)0x40012304);
-	printf("ADC_CDR: 0x%08lX\n", *(volatile uint32_t*)0x40012308);
-	printf("NVIC_ISER: 0x%08lX\n", NVIC->ISER[0]);  // Check if ADC IRQ is enabled
-	Convert_ADC_To_Voltage();
-	Convert_ADC_To_Current();
-	power = voltage * current;
-}
 
 void Read_Temperature(void)
 {
@@ -670,22 +653,14 @@ void Read_Temperature(void)
    //get the temperature value
    Convert_ADC_To_Temperature();
 }
-void Convert_ADC_To_Voltage(void)
-{
-    // Convert raw ADC value to actual voltage
-    float adc_voltage = ((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0;  // Assuming 3.3V reference
-
-    // Reverse the voltage divider calculation
-    voltage = adc_voltage * 1.5;  // Multiply by (R1 + R2) / R2
-
+static inline float convert_adc_raw_voltage(uint32_t adc_voltage_raw) {
+    return (((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0 * 1.5);
 }
 
 
-void Convert_ADC_To_Current(void)
-{
-	float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
-	current = (Vout - 2.6) / SENSITIVITY;
-
+static inline float convert_adc_raw_current(uint32_t adc_current_raw) {
+    float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
+    return (Vout - 2.6) / SENSITIVITY;  // ✅ Only returns the result, no side effects
 }
 void Convert_ADC_To_Temperature(void)
 {
@@ -695,61 +670,24 @@ void Convert_ADC_To_Temperature(void)
 	temperature = (1.0 / ((log(Rntc / UPPER_RESISTANCE) / BETA_NTC) + (1.0 / ROOM_TEMPERATURE))) - 273.15f;
 
 }
-void Test_DMA_ADC_Settings(void)
+
+void process_voltage_and_current_data(void)
 {
-    static uint32_t last_timestamp = 0;  // Track last update time
-    uint32_t current_time = HAL_GetTick();  // Get system time in milliseconds
+	adc_voltage_raw_sum = 0;
+	adc_current_raw_sum = 0;
+	//collect voltage and current raw data, add them to sum for averaging
 
-    // ✅ Only process every 400ms (matching OLED update rate)
-    if (current_time - last_timestamp >= 400)
-    {
-        last_timestamp = current_time;  // Update timestamp
+	for (int counter = 0;counter<9;counter++)
+	{
+		adc_voltage_raw_sum += (dma_adc_buffer[counter] & 0xFFFF);
+		adc_current_raw_sum += (dma_adc_buffer[counter] >> 16);
+	}
 
-        // ✅ Check if DMA buffer is receiving 4 words
-        printf("DMA Buffer: %lu %lu %lu %lu\n", dma_adc_buffer[0], dma_adc_buffer[1], dma_adc_buffer[2], dma_adc_buffer[3]);
-
-        // ✅ Extract & Print ADC values for verification
-        for (int i = 0; i < 4; i++)
-        {
-            uint32_t dualADCData = dma_adc_buffer[i];
-
-            uint16_t voltage_raw = (dualADCData & 0xFFFF);
-            uint16_t current_raw = (dualADCData >> 16);
-
-            float voltage = ((float)voltage_raw * VREF_ACTUAL1) / 4095.0 * 1.5;
-            float current = ((float)current_raw * VREF_ACTUAL1) / 4095.0;  // Modify scaling based on actual sensor
-
-            printf("Sample %d -> Voltage: %.2fV, Current: %.2fA\n", i, voltage, current);
-        }
-        printf("\n");  // New line for readability
-    }
-}
-void Debug_Check_SFRs(void)
-{
-    printf("\n**DEBUG SFRs:**\n");
-
-    // ADC1 Status Registers
-    printf("ADC1_SR:   0x%08lX\n", ADC1->SR);
-    printf("ADC2_SR:   0x%08lX\n", ADC2->SR);
-    printf("ADC_CCR:   0x%08lX\n", ADC->CCR);  // ADC Common Control Register
-    printf("ADC_CDR:   0x%08lX\n", ADC->CDR);  // ADC Dual Regular Data Register
-
-    // Timer 2 Registers (Trigger Source)
-    printf("TIM2_CR1:  0x%08lX\n", TIM2->CR1);
-    printf("TIM2_CR2:  0x%08lX\n", TIM2->CR2);
-    printf("TIM2_SR:   0x%08lX\n", TIM2->SR);
-
-    // DMA2 Status Registers
-    printf("DMA2_S0CR:  0x%08lX\n", DMA2_Stream0->CR);
-    printf("DMA2_S0NDTR: 0x%08lX\n", DMA2_Stream0->NDTR);
-    printf("DMA2_LISR:  0x%08lX\n", DMA2->LISR);  // Low Interrupt Status Register
-    printf("DMA2_HISR:  0x%08lX\n", DMA2->HISR);  // High Interrupt Status Register
-
-    // NVIC Registers (Interrupts)
-    printf("NVIC_ISER: 0x%08lX\n", NVIC->ISER[0]);  // Interrupt Set Enable Register
-    printf("NVIC_ISPR: 0x%08lX\n", NVIC->ISPR[0]);  // Interrupt Pending Register
-
-    printf("**************************\n");
+	adc_voltage_raw = adc_voltage_raw_sum / 8;
+	adc_current_raw = adc_voltage_raw_sum / 8;
+	voltage = convert_adc_raw_voltage(adc_voltage_raw);
+	current = convert_adc_raw_current(adc_current_raw);
+	power = voltage * current;
 }
 /* USER CODE END 4 */
 

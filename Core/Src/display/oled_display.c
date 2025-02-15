@@ -16,7 +16,7 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
 
     // **Voltage and Temperature Line**
     ssd1306_SetCursor(2, 2);
-    sprintf(buffer, "                     "); // Clear previous text
+    sprintf(buffer, "                 "); // Clear previous text
     ssd1306_WriteString(buffer, Font_6x8, Black);
 
     ssd1306_SetCursor(2, 2);
@@ -25,7 +25,7 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
 
     // **Current and Power Line**
     ssd1306_SetCursor(2, 12);
-    sprintf(buffer, "                     ");
+    sprintf(buffer, "                  ");
     ssd1306_WriteString(buffer, Font_6x8, Black);
 
     ssd1306_SetCursor(2, 12);
@@ -34,7 +34,7 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
 
     // **SOC and SOH Line**
     ssd1306_SetCursor(2, 22);
-    sprintf(buffer, "                     ");
+    sprintf(buffer, "                ");
     ssd1306_WriteString(buffer, Font_6x8, Black);
 
     ssd1306_SetCursor(2, 22);
@@ -43,7 +43,7 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
 
     // **Charging/Discharging Status**
     ssd1306_SetCursor(2, 32);
-    sprintf(buffer, "                     ");
+    sprintf(buffer, "                ");
     ssd1306_WriteString(buffer, Font_6x8, Black);
 
     ssd1306_SetCursor(2, 32);
@@ -52,7 +52,7 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
 
     // **Time Remaining**
     ssd1306_SetCursor(2, 42);
-    sprintf(buffer, "                     ");
+    sprintf(buffer, "                ");
     ssd1306_WriteString(buffer, Font_6x8, Black);
 
     ssd1306_SetCursor(2, 42);
