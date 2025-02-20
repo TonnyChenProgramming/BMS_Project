@@ -1,5 +1,6 @@
-Core/Src/buzzer/buzzer.o: ../Core/Src/buzzer/buzzer.c \
- ../Core/Inc/buzzer/buzzer.h ../Core/Inc/main.h \
+Core/Src/calculations.o: ../Core/Src/calculations.c \
+ ../Core/Inc/constants.h ../Core/Inc/calculations.h \
+ ../Core/Inc/sensing/sensing.h ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -32,7 +33,9 @@ Core/Src/buzzer/buzzer.o: ../Core/Src/buzzer/buzzer.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
-../Core/Inc/buzzer/buzzer.h:
+../Core/Inc/constants.h:
+../Core/Inc/calculations.h:
+../Core/Inc/sensing/sensing.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:

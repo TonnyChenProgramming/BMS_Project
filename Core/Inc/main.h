@@ -42,10 +42,14 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 /* Global Variables for ADC Processing */
+
 extern volatile uint8_t voltage_and_current_reading_flag;
 extern volatile uint8_t temperature_update_flag;
+
 extern TIM_HandleTypeDef htim2;
-extern uint32_t dma_adc_buffer[10];
+extern ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc2;
+extern DMA_HandleTypeDef hdma_adc1;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -55,7 +59,7 @@ extern uint32_t dma_adc_buffer[10];
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-
+void MX_ADC1_Init(void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

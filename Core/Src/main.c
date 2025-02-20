@@ -22,24 +22,14 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
-#include "math.h"
 #include "oled_display.h"
 #include "buzzer.h"
+#include "sensing.h"
+#include "calculations.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define VREF_ACTUAL1 2.94  // Measured VDD
-#define VREF_ACTUAL2 5.2
-
-// current sensing constants
-#define ZERO_CURRENT_OFFSET 2.6
-#define SENSITIVITY ((0.185/5)*VREF_ACTUAL2)
-
-//temperature sensing constants
-#define UPPER_RESISTANCE 10000
-#define BETA_NTC 4100
-#define ROOM_TEMPERATURE 298.15
 
 
 /* USER CODE END PTD */
@@ -60,29 +50,16 @@ ADC_HandleTypeDef hadc2;
 DMA_HandleTypeDef hdma_adc1;
 
 I2C_HandleTypeDef hi2c1;
-
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-uint32_t dma_adc_buffer[10] ={0,0,0,0,0,0,0,0,0,0};
-uint32_t adc_voltage_raw_sum = 0;
-uint32_t adc_current_raw_sum = 0;
-uint32_t adc_voltage_raw = 0;
-uint32_t adc_current_raw = 0;
-uint32_t adc_temperature_raw = 0;
-float voltage = 0.0;
-float current = 0.0;
-float temperature = 0.0;
-float power = 0.0;
-int soc = 0;
-int soh = 0;
-char* status = "Charging";
-int hours = 0;
-int minutes = 0;
+
 
 //conversion flags
 volatile uint8_t voltage_and_current_reading_flag = 0;
 volatile uint8_t temperature_update_flag = 0;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,20 +67,10 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_ADC1_Init(void);
+void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
-void process_voltage_and_current_data(void);
-void reconfigure_to_temperature_channel(void);
-void reconfigure_to_dual_mode(void);
-void read_temperature(void);
-static inline float convert_adc_raw_voltage(uint32_t adc_voltage_raw);
-static inline float convert_adc_raw_current(uint32_t adc_current_raw);
-static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw);
-
-
-
 
 /* USER CODE END PFP */
 
@@ -173,6 +140,7 @@ int main(void)
 	    {
 	        voltage_and_current_reading_flag = 0;  // Reset flag
 	        process_voltage_and_current_data();
+	        calculate_oled_parameters();
 	        oled_display(voltage, current, soc, power, temperature, soh, status, hours, minutes);
 	    }
 	    if (temperature_update_flag)
@@ -237,7 +205,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_ADC1_Init(void)
+void MX_ADC1_Init(void)
 {
 
   /* USER CODE BEGIN ADC1_Init 0 */
@@ -581,132 +549,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 
-void reconfigure_to_dual_mode(void)
-{
-	HAL_ADC_DeInit(&hadc1);  // Fully reset ADC1
-	MX_ADC1_Init();
-    //restart dual mode
-    HAL_TIM_Base_Start(&htim2);
-    HAL_ADC_Start(&hadc2);
-    HAL_ADC_Start_DMA(&hadc1, dma_adc_buffer, 8);
-}
 
-
-
-
-
-
-void reconfigure_to_temperature_channel(void)
-{
-	// stop dual mode
-	HAL_ADC_Stop_DMA(&hadc1);
-	HAL_ADC_Stop(&hadc2);
-	HAL_TIM_Base_Stop(&htim2);
-
-	//switch ADC1 to independent mode
-
-	HAL_ADC_DeInit(&hadc1);  // Fully reset ADC1
-
-	hadc1.Instance = ADC1;
-	hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-	hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-	hadc1.Init.ScanConvMode = DISABLE;
-	hadc1.Init.ContinuousConvMode = DISABLE;
-	hadc1.Init.DiscontinuousConvMode = DISABLE;
-	hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-	hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-	hadc1.Init.NbrOfConversion = 1;
-	hadc1.Init.DMAContinuousRequests = DISABLE;
-	hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-
-    HAL_ADC_Init(&hadc1);
-
-    ADC_MultiModeTypeDef multimode = {0};
-    multimode.Mode = ADC_MODE_INDEPENDENT;
-    if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
-    {
-        Error_Handler();
-    }
-
-    // Switch ADC1 to PA3 (Temperature)
-    ADC_ChannelConfTypeDef sConfig1 = {0}; // Use a local struct
-    sConfig1.Channel = ADC_CHANNEL_3;
-    sConfig1.Rank = 1;
-    sConfig1.SamplingTime = ADC_SAMPLETIME_56CYCLES;
-
-    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig1) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
-}
-
-
-void read_temperature(void)
-{
-   adc_temperature_raw = 0;  // Reset previous readings
-
-   // Start ADC Conversion
-   // ✅ Start ADC Conversion (Software Trigger)
-   HAL_ADC_Start(&hadc1);
-
-   // Wait for ADC conversion to complete
-   HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-
-   // Read ADC value
-   adc_temperature_raw = HAL_ADC_GetValue(&hadc1);
-
-   // Stop ADC after reading
-   HAL_ADC_Stop(&hadc1);
-
-   //get the temperature value
-   temperature = convert_adc_raw_temperature(adc_temperature_raw);
-}
-static inline float convert_adc_raw_voltage(uint32_t adc_voltage_raw) {
-    return (((float)adc_voltage_raw * VREF_ACTUAL1) / 4095.0 * 1.5);
-}
-
-
-static inline float convert_adc_raw_current(uint32_t adc_current_raw) {
-    float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
-    return (Vout - 2.6) / SENSITIVITY;  // ✅ Only returns the result, no side effects
-}
-
-static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw) {
-    float Vntc = ((float)adc_temperature_raw * VREF_ACTUAL1) / 4095.0;
-    float Rntc = (Vntc * UPPER_RESISTANCE) / (VREF_ACTUAL1 - Vntc);
-
-    return (1.0f / ((log(Rntc / UPPER_RESISTANCE) / BETA_NTC) + (1.0f / ROOM_TEMPERATURE))) - 273.15f;
-}
-
-void process_voltage_and_current_data(void)
-{
-	adc_voltage_raw_sum = 0;
-	adc_current_raw_sum = 0;
-	//collect voltage and current raw data, add them to sum for averaging
-
-	for (int counter = 0;counter<8;counter++)
-	{
-		adc_voltage_raw_sum += (dma_adc_buffer[counter] & 0xFFFF);
-		adc_current_raw_sum += (dma_adc_buffer[counter] >> 16);
-	}
-
-	adc_voltage_raw = adc_voltage_raw_sum / 8;
-	adc_current_raw = adc_current_raw_sum / 8;
-	voltage = convert_adc_raw_voltage(adc_voltage_raw);
-	current = convert_adc_raw_current(adc_current_raw);
-	if (current <0)
-	{
-		current = 0.0;
-		status = "Idle";
-	}
-	else
-	{
-		status = "Charging";
-	}
-	power = voltage * current;
-}
 /* USER CODE END 4 */
 
 /**

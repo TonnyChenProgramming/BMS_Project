@@ -51,8 +51,10 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="&quot;../Core\Inc\display&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Core\Src\display&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\stm32Projects\BMS_Project\Core\Inc\buzzer&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\stm32Projects\BMS_Project\Core\Src\buzzer&quot;"/>
+									<listOptionValue builtIn="false" value="../Core/Inc/sensing"/>
+									<listOptionValue builtIn="false" value="../Core/Src/sensing"/>
+									<listOptionValue builtIn="false" value="../Core/Inc/buzzer"/>
+									<listOptionValue builtIn="false" value="../Core/Src/buzzer"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.705657442" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

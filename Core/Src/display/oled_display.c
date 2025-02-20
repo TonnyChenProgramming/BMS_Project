@@ -20,7 +20,7 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
     ssd1306_WriteString(buffer, Font_6x8, Black);
 
     ssd1306_SetCursor(2, 2);
-    sprintf(buffer, "V: %.2fV  T: %.1fC", voltage, temperature);
+    sprintf(buffer, "V: %.2fV  T: %.1fC", voltage/1000, temperature); // show voltage in V
     ssd1306_WriteString(buffer, Font_6x8, White);
 
     // **Current and Power Line**
@@ -29,7 +29,7 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
     ssd1306_WriteString(buffer, Font_6x8, Black);
 
     ssd1306_SetCursor(2, 12);
-    sprintf(buffer, "I: %.2fA P: %.2fW", current, power);
+    sprintf(buffer, "I: %.2fA P: %.2fW", current/1000, power); // Show current in A
     ssd1306_WriteString(buffer, Font_6x8, White);
 
     // **SOC and SOH Line**
