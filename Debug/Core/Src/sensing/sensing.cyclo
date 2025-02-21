@@ -1,7 +1,8 @@
-../Core/Src/sensing/sensing.c:35:6:reconfigure_to_dual_mode	1
-../Core/Src/sensing/sensing.c:46:6:reconfigure_to_temperature_channel	3
-../Core/Src/sensing/sensing.c:93:6:read_temperature	1
-../Core/Src/sensing/sensing.c:113:21:convert_adc_raw_voltage_in_mV	1
-../Core/Src/sensing/sensing.c:118:21:convert_adc_raw_current_in_mA	1
-../Core/Src/sensing/sensing.c:123:21:convert_adc_raw_temperature	1
-../Core/Src/sensing/sensing.c:130:6:process_voltage_and_current_data	3
+../Core/Src/sensing/sensing.c:37:6:reconfigure_to_dual_mode	1
+../Core/Src/sensing/sensing.c:48:6:reconfigure_to_temperature_channel	3
+../Core/Src/sensing/sensing.c:95:6:read_temperature	1
+../Core/Src/sensing/sensing.c:115:21:convert_adc_raw_voltage_in_mV	1
+../Core/Src/sensing/sensing.c:120:21:convert_adc_raw_current_in_mA	1
+../Core/Src/sensing/sensing.c:125:21:convert_adc_raw_temperature	1
+../Core/Src/sensing/sensing.c:131:13:determine_status	7
+../Core/Src/sensing/sensing.c:159:6:process_voltage_and_current_data	3

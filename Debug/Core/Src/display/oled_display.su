@@ -1,2 +1,3 @@
-../Core/Src/display/oled_display.c:7:6:oled_init	8	static
-../Core/Src/display/oled_display.c:12:6:oled_display	88	static
+../Core/Src/display/oled_display.c:7:13:batteryStatusToString	16	static
+../Core/Src/display/oled_display.c:18:6:oled_init	8	static
+../Core/Src/display/oled_display.c:23:6:oled_display	88	static

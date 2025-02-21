@@ -5,7 +5,7 @@
 #define VREF_ACTUAL2 5.2
 
 // current sensing constants
-#define ZERO_CURRENT_OFFSET 2.6
+#define ZERO_CURRENT_OFFSET 2.52
 #define SENSITIVITY ((0.185/5)*VREF_ACTUAL2)
 
 //temperature sensing constants
@@ -22,14 +22,16 @@ uint32_t adc_temperature_raw = 0;
 float voltage = 0.0; // store voltage in mV
 float current = 0.0; // store current in mA
 float temperature = 0.0;
-char* status = "Charging";
 
+static float previous_voltage = 0.0; // determine the state of battery charging/idle
+static float same_voltage_counter = 0;
 void reconfigure_to_dual_mode(void);
 void reconfigure_to_temperature_channel(void);
 void read_temperature(void);
 static inline float convert_adc_raw_voltage_in_mV(uint32_t adc_voltage_raw);
 static inline float convert_adc_raw_current_in_mA(uint32_t adc_current_raw);
 static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw);
+static void determine_status(void);
 void process_voltage_and_current_data(void);
 
 void reconfigure_to_dual_mode(void)
@@ -117,7 +119,7 @@ static inline float convert_adc_raw_voltage_in_mV(uint32_t adc_voltage_raw) {
 
 static inline float convert_adc_raw_current_in_mA(uint32_t adc_current_raw) {
     float Vout = ((float)adc_current_raw * VREF_ACTUAL1) / 4095.0;
-    return (Vout - 2.6) / SENSITIVITY * 1000;  // ✅ Only returns the result, no side effects
+    return (Vout - ZERO_CURRENT_OFFSET) / SENSITIVITY * 1000;  // ✅ Only returns the result, no side effects
 }
 
 static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw) {
@@ -126,7 +128,34 @@ static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw) {
 
     return (1.0f / ((log(Rntc / UPPER_RESISTANCE) / BETA_NTC) + (1.0f / ROOM_TEMPERATURE))) - 273.15f;
 }
+static void determine_status(void)
+{
+	// this function is used to determine the status of the battery, either in charging/full/idle
+	// if voltage difference is positive, then it is charging, otherwise, idel
+	if (voltage - previous_voltage >= 75 ) // current voltage is 0.01V greater than the last voltage
+	{
+		batteryStatus = CHARGING;
+		same_voltage_counter = 0;
+	}
+	else if (voltage-previous_voltage <50 && previous_voltage - voltage <50 && current < 50)//a noise buffer range
+	{
+		same_voltage_counter++;// if it is not continuously increasing, reset to zero
+	}
+	previous_voltage = voltage;
 
+	if (same_voltage_counter >=13) // if the same voltage state last for 10s
+	{
+		if (voltage >=4150)
+		{
+			batteryStatus = FULL;
+		}
+		else
+		{
+			batteryStatus = IDLE;
+		}
+		same_voltage_counter = 0;
+	}
+}
 void process_voltage_and_current_data(void)
 {
 	adc_voltage_raw_sum = 0;
@@ -143,13 +172,11 @@ void process_voltage_and_current_data(void)
 	adc_current_raw = adc_current_raw_sum / 8;
 	voltage = convert_adc_raw_voltage_in_mV(adc_voltage_raw);
 	current = convert_adc_raw_current_in_mA(adc_current_raw);
+	// the current should never less than zero, if it does, just set it to 0
 	if (current <0)
 	{
 		current = 0.0;
-		status = "Idle";
 	}
-	else
-	{
-		status = "Charging";
-	}
+	determine_status();
+
 }

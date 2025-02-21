@@ -1,6 +1,6 @@
-../Core/Src/calculations.c:18:6:calculate_oled_parameters	8	static
-../Core/Src/calculations.c:26:12:calculate_soc	16	static
-../Core/Src/calculations.c:33:12:calculate_soh	4	static
-../Core/Src/calculations.c:51:21:calculate_power	4	static
-../Core/Src/calculations.c:55:13:calculate_remaining_time	4	static
-../Core/Src/calculations.c:59:7:calculate_total_energy_charged	4	static
+../Core/Src/calculations.c:19:6:calculate_oled_parameters	8	static
+../Core/Src/calculations.c:34:12:calculate_soc	16	static
+../Core/Src/calculations.c:41:12:calculate_soh	4	static
+../Core/Src/calculations.c:59:21:calculate_power	4	static
+../Core/Src/calculations.c:63:13:calculate_remaining_time	16	static
+../Core/Src/calculations.c:78:7:calculate_total_energy_charged	4	static

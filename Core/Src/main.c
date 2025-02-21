@@ -53,7 +53,7 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-
+BatteryStatus batteryStatus = IDLE;  // Define the variable here
 
 //conversion flags
 volatile uint8_t voltage_and_current_reading_flag = 0;
@@ -141,7 +141,7 @@ int main(void)
 	        voltage_and_current_reading_flag = 0;  // Reset flag
 	        process_voltage_and_current_data();
 	        calculate_oled_parameters();
-	        oled_display(voltage, current, soc, power, temperature, soh, status, hours, minutes);
+	        oled_display(voltage, current, soc, power, temperature, soh, batteryStatus, hours, minutes);
 	    }
 	    if (temperature_update_flag)
 	    {
@@ -149,7 +149,7 @@ int main(void)
 	    	reconfigure_to_temperature_channel();
 	    	read_temperature();
 	    	reconfigure_to_dual_mode();
-	    	oled_display(voltage, current, soc, power, temperature, soh, status, hours, minutes);
+	    	oled_display(voltage, current, soc, power, temperature, soh, batteryStatus, hours, minutes);
 	    }
   }
   /* USER CODE END 3 */

@@ -6,7 +6,7 @@ int soc = 0;
 int soh = 0;
 int hours = 0;
 int minutes = 0;
-
+static int sec = 0;
 // Declare functions
 static int calculate_soc(void);
 static int calculate_soh(void);
@@ -15,11 +15,19 @@ static void calculate_remaining_time(void);
 void calculate_oled_parameters(void);
 float calculate_total_energy_charged(void);
 
+//soh wrong triggered. soc miscalcualted after the voltage spike.current is 0 A?
 void calculate_oled_parameters(void)
 {
 	// oled requires voltage, current, soc, power, temperature, soh, status, hours, minutes
-	soc = calculate_soc();
-	soh = calculate_soh();
+	if (batteryStatus == IDLE || batteryStatus == FULL)
+	{
+		soc = calculate_soc();
+	}
+	if (batteryStatus == FULL)
+	{
+		soh = calculate_soh();
+	}
+
 	power = calculate_power();
 	calculate_remaining_time();
 }
@@ -54,7 +62,18 @@ static inline float calculate_power(void)
 }
 static void calculate_remaining_time(void)
 {
-	return;
+	if (soc != 0 && power!=0)
+	{
+		sec = ((1.0-(float)soc/100) *(float)BATTERY_CAPACITY_MWH/1000 * 3600) / power;
+		hours = sec / 3600;
+		minutes = sec % 3600 / 60;
+	}
+	else
+	{
+		hours = 0;
+		minutes = 0;
+	}
+
 }
 float calculate_total_energy_charged(void)
 {

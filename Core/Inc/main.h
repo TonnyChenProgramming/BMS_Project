@@ -42,6 +42,13 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 /* Global Variables for ADC Processing */
+typedef enum {
+    IDLE,
+    CHARGING,
+    FULL
+} BatteryStatus;
+
+extern BatteryStatus batteryStatus;  // Declare as extern
 
 extern volatile uint8_t voltage_and_current_reading_flag;
 extern volatile uint8_t temperature_update_flag;
