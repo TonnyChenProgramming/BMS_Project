@@ -29,7 +29,14 @@ void oled_display(float voltage,float current, int soc, float power, float tempe
     //ssd1306_SetCursor(2, 2);
     //sprintf(buffer, "                 "); // Clear previous text
     //ssd1306_WriteString(buffer, Font_6x8, Black);
+    if (power<0.5 && batteryStatus==CHARGING)
+    {
+    	ssd1306_SetCursor(2, 32);
+    	ssd1306_WriteString("Initializing", Font_7x10, White);
+    	ssd1306_UpdateScreen();
+    	return;
 
+    }
     ssd1306_SetCursor(2, 2);
     sprintf(buffer, "V: %.2fV  T: %.1fC", voltage/1000, temperature); // show voltage in V
     ssd1306_WriteString(buffer, Font_6x8, White);

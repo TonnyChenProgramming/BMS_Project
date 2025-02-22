@@ -8,7 +8,7 @@ extern float voltage;
 extern float current;
 extern float temperature;
 extern uint32_t dma_adc_buffer[10];
-extern BatteryStatus batteryStatus;;
+
 // Function prototypes
 void reconfigure_to_dual_mode(void);
 void reconfigure_to_temperature_channel(void);

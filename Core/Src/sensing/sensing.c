@@ -23,15 +23,14 @@ float voltage = 0.0; // store voltage in mV
 float current = 0.0; // store current in mA
 float temperature = 0.0;
 
-static float previous_voltage = 0.0; // determine the state of battery charging/idle
-static float same_voltage_counter = 0;
+
+
 void reconfigure_to_dual_mode(void);
 void reconfigure_to_temperature_channel(void);
 void read_temperature(void);
 static inline float convert_adc_raw_voltage_in_mV(uint32_t adc_voltage_raw);
 static inline float convert_adc_raw_current_in_mA(uint32_t adc_current_raw);
 static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw);
-static void determine_status(void);
 void process_voltage_and_current_data(void);
 
 void reconfigure_to_dual_mode(void)
@@ -128,34 +127,7 @@ static inline float convert_adc_raw_temperature(uint32_t adc_temperature_raw) {
 
     return (1.0f / ((log(Rntc / UPPER_RESISTANCE) / BETA_NTC) + (1.0f / ROOM_TEMPERATURE))) - 273.15f;
 }
-static void determine_status(void)
-{
-	// this function is used to determine the status of the battery, either in charging/full/idle
-	// if voltage difference is positive, then it is charging, otherwise, idel
-	if (voltage - previous_voltage >= 75 ) // current voltage is 0.01V greater than the last voltage
-	{
-		batteryStatus = CHARGING;
-		same_voltage_counter = 0;
-	}
-	else if (voltage-previous_voltage <50 && previous_voltage - voltage <50 && current < 50)//a noise buffer range
-	{
-		same_voltage_counter++;// if it is not continuously increasing, reset to zero
-	}
-	previous_voltage = voltage;
 
-	if (same_voltage_counter >=13) // if the same voltage state last for 10s
-	{
-		if (voltage >=4150)
-		{
-			batteryStatus = FULL;
-		}
-		else
-		{
-			batteryStatus = IDLE;
-		}
-		same_voltage_counter = 0;
-	}
-}
 void process_voltage_and_current_data(void)
 {
 	adc_voltage_raw_sum = 0;
@@ -177,6 +149,5 @@ void process_voltage_and_current_data(void)
 	{
 		current = 0.0;
 	}
-	determine_status();
 
 }
