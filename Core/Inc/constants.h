@@ -2,7 +2,7 @@
 #ifndef __CONSTANTS_H
 #define __CONSTANTS_H
 
-#define BATTERY_NAME
+#define BATTERY_NAME "18650 lithium-ion battery"
 #define BATTERY_CAPACITY_MAH 1800 //Battery Capacity: 1800mAh
 #define BATTERY_CAPACITY_MWH 6300 // Battery capacity: 6300mWh
 #define NOMINAL_VOLTAGE 3700//Nominal Voltage: 3.7V (3700mV) – Average operating voltage.

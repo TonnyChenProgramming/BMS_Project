@@ -9,21 +9,29 @@ struct Maximum {
     float temperature;
 };
 
+
 float power = 0;
 int soc = 0;
 int soh = 0;
 int hours = 0;
 int minutes = 0;
 static int sec = 0;
+
 static float previous_voltage = 0.0; // determine the state of battery charging/idle
 static float same_voltage_counter = 0;
 
+
+float average_voltage = 0;
+float average_current = 0;
+float average_temperature = 0;
 float average_power = 0;
-int number_of_power_sample = 0;
+int number_of_sample = 0;
 float total_energy_charged = 0;
 struct Maximum max = {0.0f,0.0f,0.0f};
 int total_charging_time_counter = 0;
-uint8_t fault_detected = 0;
+uint8_t total_charged_cycles = 0;
+uint8_t fault_flag = 0;
+uint8_t charge_up_flag = 0;
 // Declare functions
 static int calculate_soc(void);
 static int calculate_soh(void);
@@ -34,6 +42,9 @@ void processing(void);
 
 
 // Function Declarations
+static void calculate_average_voltage(void);
+static void calculate_average_current(void);
+static void calculate_average_temperature(void);
 static void calculate_average_power(void);
 static void calculate_total_energy_charged(void);
 static void track_maximum_voltage_current_temperature(void);
@@ -42,7 +53,7 @@ void detect_overvoltage(void);
 void detect_undervoltage(void);
 void detect_overcurrent(void);
 void detect_short_circuit(void);
-
+void update_total_charge_cycle(void);
 
 
 //soh wrong triggered. soc miscalcualted after the voltage spike.current is 0 A?
@@ -54,14 +65,19 @@ void processing(void)
 	{
 		soc = calculate_soc();
 	}
-	if (batteryStatus == FULL)
+	if (batteryStatus == FULL && (!charge_up_flag))
 	{
+		charge_up_flag = 1;
 		soh = calculate_soh();
+		update_total_charge_cycle();
 	}
 	if (batteryStatus == CHARGING  &&  current > 50)
 	{
 		power = calculate_power();
+		calculate_average_voltage();
+		calculate_average_current();
 		calculate_average_power();
+		calculate_average_temperature();
 		calculate_total_energy_charged();
 		track_maximum_voltage_current_temperature();
 		total_charging_time_counter++;
@@ -69,6 +85,7 @@ void processing(void)
 		detect_undervoltage();
 		detect_overcurrent();
 		detect_short_circuit();
+
 	}
 
 	calculate_remaining_time();
@@ -148,10 +165,22 @@ static void calculate_remaining_time(void)
 	}
 
 }
+static void calculate_average_voltage(void)
+{
+	average_voltage = average_voltage + (voltage - average_voltage)/++number_of_sample;
+}
+static void calculate_average_current(void)
+{
+	average_current = average_current + (current - average_current)/++number_of_sample;
+}
+static void calculate_average_temperature(void)
+{
+	average_temperature = average_temperature + (current - average_temperature)/++number_of_sample;
+}
 static void calculate_average_power(void)
 {
 	// applying Incremental (Rolling) Average Method
-	average_power = average_power + (power - average_power)/++number_of_power_sample;
+	average_power = average_power + (power - average_power)/++number_of_sample;
 }
 
 
@@ -174,31 +203,37 @@ static void track_maximum_voltage_current_temperature(void)
 		max.temperature = temperature;
 	}
 }
+void update_total_charge_cycle(void)
+{
+	//read the total charged cycles
+	//increment the charged cycles and update the eeprom
+	return;
+}
 void detect_overvoltage(void)
 {
 	if (voltage > MAXIMUM_VOLTAGE)
 	{
-		fault_detected = 1;
+		fault_flag = 1;
 	}
 }
 void detect_undervoltage(void)
 {
 	if (voltage < MINIMUM_VOLTAGE)
 	{
-		fault_detected = 1;
+		fault_flag = 1;
 	}
 }
 void detect_overcurrent(void)
 {
 	if (current>MAXIMUM_CHARGE_CURRENT)
 	{
-		fault_detected = 1;
+		fault_flag = 1;
 	}
 }
 void detect_short_circuit(void)
 {
 	if (voltage < SHORT_CIRCUIT_VOLTAGE_THRESHOLD && current>SHORT_CIRCUIT_CURRENT_THRESHOLD)
 	{
-		fault_detected = 1;
+		fault_flag = 1;
 	}
 }

@@ -55,6 +55,10 @@
 									<listOptionValue builtIn="false" value="../Core/Src/sensing"/>
 									<listOptionValue builtIn="false" value="../Core/Inc/buzzer"/>
 									<listOptionValue builtIn="false" value="../Core/Src/buzzer"/>
+									<listOptionValue builtIn="false" value="../Core/Inc/processings"/>
+									<listOptionValue builtIn="false" value="../Core/Src/processings"/>
+									<listOptionValue builtIn="false" value="../Core/Inc/eeprom_at24c16"/>
+									<listOptionValue builtIn="false" value="../Core/Src/eeprom_at24c16"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.705657442" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

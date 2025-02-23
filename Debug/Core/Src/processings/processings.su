@@ -1,0 +1,17 @@
+../Core/Src/processings/processings.c:60:6:processing	8	static
+../Core/Src/processings/processings.c:94:6:determine_status	4	static
+../Core/Src/processings/processings.c:124:12:calculate_soc	16	static
+../Core/Src/processings/processings.c:131:12:calculate_soh	4	static
+../Core/Src/processings/processings.c:149:21:calculate_power	4	static
+../Core/Src/processings/processings.c:153:13:calculate_remaining_time	16	static
+../Core/Src/processings/processings.c:168:13:calculate_average_voltage	4	static
+../Core/Src/processings/processings.c:172:13:calculate_average_current	4	static
+../Core/Src/processings/processings.c:176:13:calculate_average_temperature	4	static
+../Core/Src/processings/processings.c:180:13:calculate_average_power	4	static
+../Core/Src/processings/processings.c:187:13:calculate_total_energy_charged	16	static
+../Core/Src/processings/processings.c:191:13:track_maximum_voltage_current_temperature	4	static
+../Core/Src/processings/processings.c:206:6:update_total_charge_cycle	4	static
+../Core/Src/processings/processings.c:212:6:detect_overvoltage	4	static
+../Core/Src/processings/processings.c:219:6:detect_undervoltage	4	static
+../Core/Src/processings/processings.c:226:6:detect_overcurrent	4	static
+../Core/Src/processings/processings.c:233:6:detect_short_circuit	4	static

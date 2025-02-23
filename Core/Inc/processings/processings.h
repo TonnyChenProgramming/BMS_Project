@@ -8,7 +8,7 @@ extern int soc;
 extern int soh;
 extern int hours;
 extern int minutes;
-extern uint8_t fault_detected;
+extern uint8_t fault_flag;
 void processing(void);
 
 

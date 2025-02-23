@@ -151,7 +151,7 @@ int main(void)
 	    	reconfigure_to_dual_mode();
 	    	oled_display(voltage, current, soc, power, temperature, soh, batteryStatus, hours, minutes);
 	    }
-	    if (fault_detected)
+	    if (fault_flag)
 	    {
 	    	buzzer_on();
 	    }

@@ -25,6 +25,7 @@ SUBDIRS := \
 Core/Src/buzzer \
 Core/Src/display \
 Core/Src \
+Core/Src/processings \
 Core/Src/sensing \
 Core/Startup \
 Drivers/STM32F4xx_HAL_Driver/Src \
