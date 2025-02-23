@@ -1,13 +1,15 @@
 #ifndef __CALCULATIONS_H
 #define __CALCULATIONS_H
 
+#include "main.h"
 
 extern float power;
 extern int soc;
 extern int soh;
 extern int hours;
 extern int minutes;
-void calculate_oled_parameters(void);
+extern uint8_t fault_detected;
+void processing(void);
 
 
 #endif

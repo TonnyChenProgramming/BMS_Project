@@ -1,8 +1,13 @@
+#include <processings.h>
 #include "constants.h"
-#include "calculations.h"
 #include "sensing.h"
 #include "main.h"
 
+struct Maximum {
+    float voltage;
+    float current;
+    float temperature;
+};
 
 float power = 0;
 int soc = 0;
@@ -15,30 +20,33 @@ static float same_voltage_counter = 0;
 
 float average_power = 0;
 int number_of_power_sample = 0;
+float total_energy_charged = 0;
+struct Maximum max = {0.0f,0.0f,0.0f};
+int total_charging_time_counter = 0;
+uint8_t fault_detected = 0;
 // Declare functions
 static int calculate_soc(void);
 static int calculate_soh(void);
 static inline float calculate_power(void);
 static void calculate_remaining_time(void);
 static void determine_status(void);
-void calculate_oled_parameters(void);
+void processing(void);
 
 
 // Function Declarations
-void calculate_average_power(void);
-void calculate_total_energy_charged(void);
-void track_maximum_voltage(void);
-void track_maximum_temperature(void);
+static void calculate_average_power(void);
+static void calculate_total_energy_charged(void);
+static void track_maximum_voltage_current_temperature(void);
 void record_total_charging_time(void);
 void detect_overvoltage(void);
 void detect_undervoltage(void);
 void detect_overcurrent(void);
 void detect_short_circuit(void);
-void detect_eeprome_write_error(void);
+
 
 
 //soh wrong triggered. soc miscalcualted after the voltage spike.current is 0 A?
-void calculate_oled_parameters(void)
+void processing(void)
 {
 	determine_status();
 	// oled requires voltage, current, soc, power, temperature, soh, status, hours, minutes
@@ -54,23 +62,18 @@ void calculate_oled_parameters(void)
 	{
 		power = calculate_power();
 		calculate_average_power();
+		calculate_total_energy_charged();
+		track_maximum_voltage_current_temperature();
+		total_charging_time_counter++;
+		detect_overvoltage();
+		detect_undervoltage();
+		detect_overcurrent();
+		detect_short_circuit();
 	}
 
 	calculate_remaining_time();
 }
-void calculate_eeprom_parameters(void)
-{
-	calculate_average_power();
-	calculate_total_energy_charged();
-	track_maximum_voltage();
-	track_maximum_temperature();
-	record_total_charging_time();
-	detect_overvoltage();
-	detect_undervoltage();
-	detect_overcurrent();
-	detect_short_circuit();
-	detect_eeprome_write_error();
-}
+
 void determine_status(void)
 {
 	// this function is used to determine the status of the battery, either in charging/full/idle
@@ -145,21 +148,57 @@ static void calculate_remaining_time(void)
 	}
 
 }
-void calculate_average_power(void)
+static void calculate_average_power(void)
 {
 	// applying Incremental (Rolling) Average Method
 	average_power = average_power + (power - average_power)/++number_of_power_sample;
 }
 
 
-void calculate_total_energy_charged(void)
+static void calculate_total_energy_charged(void)
 {
-    // Use the inline function to calculate power
-    //float power = calculate_power(voltage, current);
-    // Calculate energy charged in watt-hours (Wh)
-    //float energy_charged = power * (time_interval / 3600.0); // Convert seconds to hours
-    //return energy_charged;
-	return ;
+	total_energy_charged += power * TIME_INTERVAL;
 }
-
-
+static void track_maximum_voltage_current_temperature(void)
+{
+	if (voltage>max.voltage)
+	{
+		max.voltage = voltage;
+	}
+	if (current>max.current)
+	{
+		max.current = current;
+	}
+	if (temperature>max.temperature)
+	{
+		max.temperature = temperature;
+	}
+}
+void detect_overvoltage(void)
+{
+	if (voltage > MAXIMUM_VOLTAGE)
+	{
+		fault_detected = 1;
+	}
+}
+void detect_undervoltage(void)
+{
+	if (voltage < MINIMUM_VOLTAGE)
+	{
+		fault_detected = 1;
+	}
+}
+void detect_overcurrent(void)
+{
+	if (current>MAXIMUM_CHARGE_CURRENT)
+	{
+		fault_detected = 1;
+	}
+}
+void detect_short_circuit(void)
+{
+	if (voltage < SHORT_CIRCUIT_VOLTAGE_THRESHOLD && current>SHORT_CIRCUIT_CURRENT_THRESHOLD)
+	{
+		fault_detected = 1;
+	}
+}

@@ -1,6 +1,5 @@
-Core/Src/calculations.o: ../Core/Src/calculations.c \
- ../Core/Inc/constants.h ../Core/Inc/calculations.h \
- ../Core/Inc/sensing/sensing.h ../Core/Inc/main.h \
+Core/Src/processings.o: ../Core/Src/processings.c \
+ ../Core/Inc/processings.h ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -32,10 +31,9 @@ Core/Src/calculations.o: ../Core/Src/calculations.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
-../Core/Inc/constants.h:
-../Core/Inc/calculations.h:
-../Core/Inc/sensing/sensing.h:
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
+ ../Core/Inc/constants.h ../Core/Inc/sensing/sensing.h ../Core/Inc/main.h
+../Core/Inc/processings.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -69,3 +67,6 @@ Core/Src/calculations.o: ../Core/Src/calculations.c \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
+../Core/Inc/constants.h:
+../Core/Inc/sensing/sensing.h:
+../Core/Inc/main.h:

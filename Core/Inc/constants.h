@@ -11,5 +11,7 @@
 #define MAXIMUM_CHARGE_CURRENT 1800//Maximum Charge Current: 1.8A (1800mA) – Safe charging limit.
 #define CHARGING_TEMPERATURE_MINIMUM 0//Operating Temperature Range:
 #define CHARGING_TEMPERATURE_MAXIMUM 45 //Charging: 0°C to 45°C
-
+#define SHORT_CIRCUIT_CURRENT_THRESHOLD 5000 // 500mA
+#define SHORT_CIRCUIT_VOLTAGE_THRESHOLD 3000 // 3mV
+#define TIME_INTERVAL 0.8
 #endif

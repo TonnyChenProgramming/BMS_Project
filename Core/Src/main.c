@@ -17,6 +17,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <processings.h>
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -25,7 +26,6 @@
 #include "oled_display.h"
 #include "buzzer.h"
 #include "sensing.h"
-#include "calculations.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -140,7 +140,7 @@ int main(void)
 	    {
 	        voltage_and_current_reading_flag = 0;  // Reset flag
 	        process_voltage_and_current_data();
-	        calculate_oled_parameters();
+	        processing();
 	        oled_display(voltage, current, soc, power, temperature, soh, batteryStatus, hours, minutes);
 	    }
 	    if (temperature_update_flag)
@@ -150,6 +150,10 @@ int main(void)
 	    	read_temperature();
 	    	reconfigure_to_dual_mode();
 	    	oled_display(voltage, current, soc, power, temperature, soh, batteryStatus, hours, minutes);
+	    }
+	    if (fault_detected)
+	    {
+	    	buzzer_on();
 	    }
   }
   /* USER CODE END 3 */

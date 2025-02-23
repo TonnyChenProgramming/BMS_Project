@@ -1,9 +1,0 @@
-../Core/Src/calculations.c:41:6:calculate_oled_parameters	7
-../Core/Src/calculations.c:61:6:calculate_eeprom_parameters	1
-../Core/Src/calculations.c:74:6:determine_status	7
-../Core/Src/calculations.c:104:12:calculate_soc	3
-../Core/Src/calculations.c:111:12:calculate_soh	5
-../Core/Src/calculations.c:129:21:calculate_power	1
-../Core/Src/calculations.c:133:13:calculate_remaining_time	3
-../Core/Src/calculations.c:148:6:calculate_average_power	1
-../Core/Src/calculations.c:155:6:calculate_total_energy_charged	1
