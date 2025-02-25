@@ -22,8 +22,10 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+Core/Src/bms_data \
 Core/Src/buzzer \
 Core/Src/display \
+Core/Src/eeprom_at24c16 \
 Core/Src \
 Core/Src/processings \
 Core/Src/sensing \

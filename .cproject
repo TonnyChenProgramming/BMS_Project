@@ -59,6 +59,8 @@
 									<listOptionValue builtIn="false" value="../Core/Src/processings"/>
 									<listOptionValue builtIn="false" value="../Core/Inc/eeprom_at24c16"/>
 									<listOptionValue builtIn="false" value="../Core/Src/eeprom_at24c16"/>
+									<listOptionValue builtIn="false" value="../Core/Inc/bms_data"/>
+									<listOptionValue builtIn="false" value="../Core/Src/bms_data"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.705657442" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

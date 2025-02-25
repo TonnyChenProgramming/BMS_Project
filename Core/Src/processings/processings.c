@@ -2,58 +2,47 @@
 #include "constants.h"
 #include "sensing.h"
 #include "main.h"
-
-struct Maximum {
-    float voltage;
-    float current;
-    float temperature;
-};
+#include "bms_data.h"
 
 
 float power = 0;
-int soc = 0;
-int soh = 0;
-int hours = 0;
-int minutes = 0;
-static int sec = 0;
+Time_t time_pack = {0};
 
 static float previous_voltage = 0.0; // determine the state of battery charging/idle
 static float same_voltage_counter = 0;
+static int number_of_sample = 0;
+static float energyAccumulator = 0.0f;
+static uint8_t total_charging_time_counter = 0;
 
-
-float average_voltage = 0;
-float average_current = 0;
-float average_temperature = 0;
-float average_power = 0;
-int number_of_sample = 0;
-float total_energy_charged = 0;
-struct Maximum max = {0.0f,0.0f,0.0f};
-int total_charging_time_counter = 0;
-uint8_t total_charged_cycles = 0;
-uint8_t fault_flag = 0;
-uint8_t charge_up_flag = 0;
-// Declare functions
-static int calculate_soc(void);
-static int calculate_soh(void);
-static inline float calculate_power(void);
-static void calculate_remaining_time(void);
-static void determine_status(void);
-void processing(void);
-
+static uint8_t tracker = 0;
 
 // Function Declarations
-static void calculate_average_voltage(void);
-static void calculate_average_current(void);
-static void calculate_average_temperature(void);
-static void calculate_average_power(void);
+
+// Internal Helper Functions
+static int calculate_soc(void);
+static int calculate_soh(void);
+static inline float calculate_power();
+static void calculate_remaining_time(void);
+static void determine_status(void);
+
+// Average Calculations
+static inline uint16_t calculate_average_voltage(void);
+static inline uint16_t calculate_average_current(void);
+static inline uint8_t calculate_average_temperature(void);
+static inline uint16_t calculate_average_power(void);
 static void calculate_total_energy_charged(void);
+
+// Tracking and Fault Detection
 static void track_maximum_voltage_current_temperature(void);
-void record_total_charging_time(void);
-void detect_overvoltage(void);
-void detect_undervoltage(void);
-void detect_overcurrent(void);
-void detect_short_circuit(void);
-void update_total_charge_cycle(void);
+static void record_total_charging_time(void);
+static void detect_overvoltage(void);
+static void detect_undervoltage(void);
+static void detect_overcurrent(void);
+static void detect_short_circuit(void);
+
+
+// Main Processing Function
+void processing(void);
 
 
 //soh wrong triggered. soc miscalcualted after the voltage spike.current is 0 A?
@@ -63,29 +52,34 @@ void processing(void)
 	// oled requires voltage, current, soc, power, temperature, soh, status, hours, minutes
 	if ((batteryStatus == IDLE || batteryStatus == FULL)&&power < 0.5)
 	{
-		soc = calculate_soc();
+		BMS_Data.stateOfCharge_percent = calculate_soc();
 	}
-	if (batteryStatus == FULL && (!charge_up_flag))
+	if (batteryStatus == FULL && (!BMS_Data.charge_up_flag))
 	{
-		charge_up_flag = 1;
-		soh = calculate_soh();
-		update_total_charge_cycle();
+		BMS_Data.charge_up_flag = 1;
+		BMS_Data.stateOfHealth_percent = calculate_soh();
 	}
 	if (batteryStatus == CHARGING  &&  current > 50)
 	{
 		power = calculate_power();
-		calculate_average_voltage();
-		calculate_average_current();
-		calculate_average_power();
-		calculate_average_temperature();
+		number_of_sample++;
+		BMS_Data.averageVoltage_mV = calculate_average_voltage();
+		BMS_Data.averageCurrent_mA = calculate_average_current();
+		BMS_Data.averagePower_mW = calculate_average_power();
+		BMS_Data.averageTemperature_C = calculate_average_temperature();
 		calculate_total_energy_charged();
+		record_total_charging_time();
 		track_maximum_voltage_current_temperature();
-		total_charging_time_counter++;
 		detect_overvoltage();
 		detect_undervoltage();
 		detect_overcurrent();
 		detect_short_circuit();
 
+
+		if (++tracker >=100)
+		{
+			tracker = 0;
+		}
 	}
 
 	calculate_remaining_time();
@@ -123,7 +117,7 @@ void determine_status(void)
 }
 static int calculate_soc(void)
 {
-    int soc = (voltage - MINIMUM_VOLTAGE) * 100 / (MAXIMUM_VOLTAGE - MINIMUM_VOLTAGE);
+    int soc = (voltage - MINIMUM_VOLTAGE_MV) * 100 / (MAXIMUM_VOLTAGE_MV - MINIMUM_VOLTAGE_MV);
     if (soc < 0) soc = 0;
     if (soc > 100) soc = 100;
     return soc;
@@ -133,17 +127,18 @@ static int calculate_soh(void)
     if (current == 0.0f && voltage >= 4000.0f)  // Battery fully charged
     {
         // Example Formula: Compare maximum voltage with nominal voltage
-        soh = (voltage / MAXIMUM_VOLTAGE) * 100;
+    	uint8_t soh = (voltage / MAXIMUM_VOLTAGE_MV) * 100;
 
         // Ensure SOH is within 0-100%
         if (soh > 100) soh = 100;
         if (soh < 0) soh = 0;
+        return soh;
     }
     else
     {
-        soh = 0;  // Not fully charged, can't measure SOH
+        return 0;  // Not fully charged, can't measure SOH
     }
-    return soh;
+
 }
 
 static inline float calculate_power(void)
@@ -154,53 +149,76 @@ static void calculate_remaining_time(void)
 {
 	if (batteryStatus == CHARGING && power > 0.5)
 	{
-		sec = ((1.0-(float)soc/100) *(float)BATTERY_CAPACITY_MWH/1000 * 3600) / power;
-		hours = sec / 3600;
-		minutes = sec % 3600 / 60;
+		time_pack.secs = ((1.0-(float)BMS_Data.stateOfCharge_percent/100) *(float)BATTERY_CAPACITY_MWH/1000 * 3600) / power;
+		time_pack.hours = time_pack.secs / 3600;
+		time_pack.minutes = time_pack.secs % 3600 / 60;
 	}
 	else
 	{
-		hours = 0;
-		minutes = 0;
+		time_pack.hours = 0;
+		time_pack.minutes = 0;
 	}
 
 }
-static void calculate_average_voltage(void)
+static inline uint16_t calculate_average_voltage(void)
 {
-	average_voltage = average_voltage + (voltage - average_voltage)/++number_of_sample;
+	return BMS_Data.averageVoltage_mV + (voltage - BMS_Data.averageVoltage_mV) / number_of_sample;
 }
-static void calculate_average_current(void)
+
+static inline uint16_t calculate_average_current(void)
 {
-	average_current = average_current + (current - average_current)/++number_of_sample;
+	return BMS_Data.averageCurrent_mA + (current - BMS_Data.averageCurrent_mA) / number_of_sample;
 }
-static void calculate_average_temperature(void)
+
+static uint8_t calculate_average_temperature(void)
 {
-	average_temperature = average_temperature + (current - average_temperature)/++number_of_sample;
+	if (temperature > 10)
+	{
+		return BMS_Data.averageTemperature_C + (temperature - BMS_Data.averageTemperature_C) / number_of_sample;
+	}
+	else
+	{
+		return BMS_Data.averageTemperature_C;
+	}
+
 }
-static void calculate_average_power(void)
+
+static inline uint16_t calculate_average_power(void)
 {
-	// applying Incremental (Rolling) Average Method
-	average_power = average_power + (power - average_power)/++number_of_sample;
+	return BMS_Data.averagePower_mW + (calculate_power() * 1000 - BMS_Data.averagePower_mW) / number_of_sample;
 }
 
 
 static void calculate_total_energy_charged(void)
 {
-	total_energy_charged += power * TIME_INTERVAL;
+    energyAccumulator += power * TIME_INTERVAL_S * 1000.0f / 3600.0f;
+    while (energyAccumulator >= 1.0f) {
+        BMS_Data.totalEnergyCharged_mWh++;
+        energyAccumulator -= 1.0f; // Remove the integer part
+    }
 }
 static void track_maximum_voltage_current_temperature(void)
 {
-	if (voltage>max.voltage)
+	if (voltage>BMS_Data.maxVoltage_mV)
 	{
-		max.voltage = voltage;
+		BMS_Data.maxVoltage_mV = voltage;
 	}
-	if (current>max.current)
+	if (current>BMS_Data.maxCurrent_mA)
 	{
-		max.current = current;
+		BMS_Data.maxCurrent_mA = current;
 	}
-	if (temperature>max.temperature)
+	if (temperature>BMS_Data.maxTemperature_C)
 	{
-		max.temperature = temperature;
+		BMS_Data.maxTemperature_C = temperature;
+	}
+}
+static void record_total_charging_time(void)
+{
+
+	if (++total_charging_time_counter >=5)
+	{
+		total_charging_time_counter =0;
+		BMS_Data.totalChargingTime_seconds += 4;
 	}
 }
 void update_total_charge_cycle(void)
@@ -211,29 +229,29 @@ void update_total_charge_cycle(void)
 }
 void detect_overvoltage(void)
 {
-	if (voltage > MAXIMUM_VOLTAGE)
+	if (voltage > MAXIMUM_VOLTAGE_MV)
 	{
-		fault_flag = 1;
+		BMS_Data.fault_flag = 1;
 	}
 }
 void detect_undervoltage(void)
 {
-	if (voltage < MINIMUM_VOLTAGE)
+	if (voltage < MINIMUM_VOLTAGE_MV)
 	{
-		fault_flag = 1;
+		BMS_Data.fault_flag = 1;
 	}
 }
 void detect_overcurrent(void)
 {
-	if (current>MAXIMUM_CHARGE_CURRENT)
+	if (current>MAXIMUM_CHARGE_CURRENT_MA)
 	{
-		fault_flag = 1;
+		BMS_Data.fault_flag = 1;
 	}
 }
 void detect_short_circuit(void)
 {
-	if (voltage < SHORT_CIRCUIT_VOLTAGE_THRESHOLD && current>SHORT_CIRCUIT_CURRENT_THRESHOLD)
+	if (voltage < SHORT_CIRCUIT_VOLTAGE_THRESHOLD_MV && current>SHORT_CIRCUIT_CURRENT_THRESHOLD_MA)
 	{
-		fault_flag = 1;
+		BMS_Data.fault_flag = 1;
 	}
 }

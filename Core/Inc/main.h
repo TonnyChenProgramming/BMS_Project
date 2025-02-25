@@ -57,6 +57,7 @@ extern TIM_HandleTypeDef htim2;
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
 extern DMA_HandleTypeDef hdma_adc1;
+extern I2C_HandleTypeDef hi2c1;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

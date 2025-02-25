@@ -3,12 +3,15 @@
 
 #include "main.h"
 
+typedef struct {
+	int hours;
+	int minutes;
+	int secs;
+} Time_t;
+
+extern Time_t time_pack;
+
 extern float power;
-extern int soc;
-extern int soh;
-extern int hours;
-extern int minutes;
-extern uint8_t fault_flag;
 void processing(void);
 
 

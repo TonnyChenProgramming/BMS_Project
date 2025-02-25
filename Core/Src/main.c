@@ -26,6 +26,8 @@
 #include "oled_display.h"
 #include "buzzer.h"
 #include "sensing.h"
+#include "bms_data.h"
+#include "processings.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -114,7 +116,8 @@ int main(void)
   MX_ADC2_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-
+  /* Initialize bms_data structure*/
+  BMS_Init();
   /* Initialize OLED and Buzzer*/
   oled_init();
   buzzer_init();
@@ -141,7 +144,7 @@ int main(void)
 	        voltage_and_current_reading_flag = 0;  // Reset flag
 	        process_voltage_and_current_data();
 	        processing();
-	        oled_display(voltage, current, soc, power, temperature, soh, batteryStatus, hours, minutes);
+	        oled_display(voltage, current, BMS_Data.stateOfCharge_percent, power, temperature, BMS_Data.stateOfHealth_percent, batteryStatus, time_pack.hours, time_pack.minutes);
 	    }
 	    if (temperature_update_flag)
 	    {
@@ -149,9 +152,9 @@ int main(void)
 	    	reconfigure_to_temperature_channel();
 	    	read_temperature();
 	    	reconfigure_to_dual_mode();
-	    	oled_display(voltage, current, soc, power, temperature, soh, batteryStatus, hours, minutes);
+	    	oled_display(voltage, current, BMS_Data.stateOfCharge_percent, power, temperature, BMS_Data.stateOfHealth_percent, batteryStatus, time_pack.hours, time_pack.minutes);
 	    }
-	    if (fault_flag)
+	    if (BMS_Data.fault_flag)
 	    {
 	    	buzzer_on();
 	    }

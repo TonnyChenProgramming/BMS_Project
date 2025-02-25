@@ -1,5 +1,6 @@
-Core/Src/processings/processings.o: ../Core/Src/processings/processings.c \
- ../Core/Inc/processings/processings.h ../Core/Inc/main.h \
+Core/Src/eeprom_at24c16/epprom_processings.o: \
+ ../Core/Src/eeprom_at24c16/epprom_processings.c \
+ ../Core/Inc/eeprom_at24c16/eeprom_processings.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -32,10 +33,8 @@ Core/Src/processings/processings.o: ../Core/Src/processings/processings.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
- ../Core/Inc/constants.h ../Core/Inc/sensing/sensing.h \
- ../Core/Inc/bms_data/bms_data.h
-../Core/Inc/processings/processings.h:
-../Core/Inc/main.h:
+ ../Core/Inc/main.h
+../Core/Inc/eeprom_at24c16/eeprom_processings.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
@@ -68,6 +67,4 @@ Core/Src/processings/processings.o: ../Core/Src/processings/processings.c \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
-../Core/Inc/constants.h:
-../Core/Inc/sensing/sensing.h:
-../Core/Inc/bms_data/bms_data.h:
+../Core/Inc/main.h:

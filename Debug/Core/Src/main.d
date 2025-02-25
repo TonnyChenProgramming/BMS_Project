@@ -32,7 +32,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/processings/processings.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Core/Inc/display/oled_display.h ../Core/Inc/buzzer/buzzer.h \
- ../Core/Inc/sensing/sensing.h
+ ../Core/Inc/sensing/sensing.h ../Core/Inc/bms_data/bms_data.h
 ../Core/Inc/processings/processings.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
@@ -70,3 +70,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/processings/processings.h \
 ../Core/Inc/display/oled_display.h:
 ../Core/Inc/buzzer/buzzer.h:
 ../Core/Inc/sensing/sensing.h:
+../Core/Inc/bms_data/bms_data.h:

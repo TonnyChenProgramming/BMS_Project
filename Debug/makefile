@@ -13,8 +13,10 @@ RM := rm -rf
 -include Core/Startup/subdir.mk
 -include Core/Src/sensing/subdir.mk
 -include Core/Src/processings/subdir.mk
+-include Core/Src/eeprom_at24c16/subdir.mk
 -include Core/Src/display/subdir.mk
 -include Core/Src/buzzer/subdir.mk
+-include Core/Src/bms_data/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk
 
