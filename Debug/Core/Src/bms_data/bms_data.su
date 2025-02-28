@@ -1,1 +1,4 @@
 ../Core/Src/bms_data/bms_data.c:7:6:BMS_Init	16	static
+../Core/Src/bms_data/bms_data.c:19:6:BMS_Data_Received_Init	8	static
+../Core/Src/bms_data/bms_data.c:23:6:BMS_SaveToEEPROM	40	static
+../Core/Src/bms_data/bms_data.c:94:6:BMS_LoadFromEEPROM	40	static

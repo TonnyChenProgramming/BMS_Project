@@ -79,6 +79,9 @@ void processing(void)
 		if (++tracker >=100)
 		{
 			tracker = 0;
+			BMS_SaveToEEPROM();
+			BMS_Data_Received_Init();
+			BMS_LoadFromEEPROM();
 		}
 	}
 

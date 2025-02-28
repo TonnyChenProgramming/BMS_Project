@@ -2,9 +2,9 @@
 #define BMS_DATA_H
 
 #include <stdint.h>
-
-#define BATTERY_NAME_MAX_LEN 25
-
+#include "eeprom_processings.h"
+#define BATTERY_NAME_MAX_LEN 26
+#define PAGE_SIZE 16
 
 // ============================= EEPROM DEVICE ADDRESS =============================
 // AT24C16 EEPROM uses 7-bit I2C address: 1010 A2 A1 A0 R/W
@@ -68,7 +68,7 @@ extern BMS_Data_t BMS_Data;
 
 // BMS data Function
 void BMS_Init(void);
-
+void BMS_Data_Received_Init(void);
 
 // EEPROM Functions
 void BMS_SaveToEEPROM(void);

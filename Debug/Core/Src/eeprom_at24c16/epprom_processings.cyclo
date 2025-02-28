@@ -1,1 +1,2 @@
-../Core/Src/eeprom_at24c16/epprom_processings.c:12:19:EEPROM_WriteBlock	4
+../Core/Src/eeprom_at24c16/epprom_processings.c:12:19:EEPROM_WritePage	4
+../Core/Src/eeprom_at24c16/epprom_processings.c:33:19:EEPROM_ReadPage	3

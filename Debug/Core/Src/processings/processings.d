@@ -33,7 +33,8 @@ Core/Src/processings/processings.o: ../Core/Src/processings/processings.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Core/Inc/constants.h ../Core/Inc/sensing/sensing.h \
- ../Core/Inc/bms_data/bms_data.h
+ ../Core/Inc/bms_data/bms_data.h \
+ ../Core/Inc/eeprom_at24c16/eeprom_processings.h
 ../Core/Inc/processings/processings.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
@@ -71,3 +72,4 @@ Core/Src/processings/processings.o: ../Core/Src/processings/processings.c \
 ../Core/Inc/constants.h:
 ../Core/Inc/sensing/sensing.h:
 ../Core/Inc/bms_data/bms_data.h:
+../Core/Inc/eeprom_at24c16/eeprom_processings.h:
