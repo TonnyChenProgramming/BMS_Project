@@ -37,7 +37,10 @@ void BMS_SaveToEEPROM(void)
 	    EEPROM_WritePage(current_devblockaddress, 0x00, buffer, 10);
 
 	    // ================== Second Page: Last 16 Characters ==================
-	    memcpy(buffer, BMS_Data.batteryName + 10, 16);
+	    printf("batteryName Address: %p\n", (void*)BMS_Data.batteryName);
+	    printf("Accessing Address: %p\n", (void*)(BMS_Data.batteryName + 10));
+	    printf("BATTERY_NAME_MAX_LEN: %d\n", BATTERY_NAME_MAX_LEN);
+	    memcpy(buffer, BMS_Data.batteryName + 10, 15);
 	    EEPROM_WritePage(current_devblockaddress, 0x10, buffer, 16);
 
 	    // ================== Third Page: Remaining Battery Information ==================
@@ -57,7 +60,7 @@ void BMS_SaveToEEPROM(void)
 	    memcpy(buffer, &BMS_Data.averageVoltage_mV, 2);
 	    memcpy(buffer + 2, &BMS_Data.averageCurrent_mA, 2);
 	    memcpy(buffer + 4, &BMS_Data.averageTemperature_C, 1);
-	    memcpy(buffer + 5, &BMS_Data.averagePower_mW, 2);
+	    memcpy(buffer + 6, &BMS_Data.averagePower_mW, 2); // prevent bus fault
 	    EEPROM_WritePage(current_devblockaddress, 0x00, buffer, 16);
 
 	    // ================== Block 2: State of Charge & Health ==================
@@ -123,7 +126,7 @@ void BMS_LoadFromEEPROM(void)
     memcpy(&BMS_Data_Received.averageVoltage_mV, buffer, 2);
     memcpy(&BMS_Data_Received.averageCurrent_mA, buffer + 2, 2);
     memcpy(&BMS_Data_Received.averageTemperature_C, buffer + 4, 1);
-    memcpy(&BMS_Data_Received.averagePower_mW, buffer + 5, 2);
+    memcpy(&BMS_Data_Received.averagePower_mW, buffer + 6, 2);
 
     // ================ Block 2: State of Charge & Health ==================
     current_devblockaddress = EEPROM_WRITE_ADDRESS(2);

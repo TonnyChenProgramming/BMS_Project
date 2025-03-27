@@ -76,7 +76,7 @@ void processing(void)
 		detect_short_circuit();
 
 
-		if (++tracker >=100)
+		if (++tracker >=30)
 		{
 			tracker = 0;
 			BMS_SaveToEEPROM();
