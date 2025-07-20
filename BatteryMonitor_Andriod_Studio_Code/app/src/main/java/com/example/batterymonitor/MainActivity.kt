@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
                 averageCurrentTextView.text = "Average Current: ${data.averageCurrent} mA"
                 averageTemperatureTextView.text = "Average Temperature: ${data.averageTemperature} °C"
                 totalChargeCyclesTextView.text = "Total Charge Cycles: ${data.totalChargeCycles}"
-                totalChargingTimeTextView.text = "Total Charging Time: ${data.totalChargingTime} min"
+                totalChargingTimeTextView.text = "Total Charging Time: ${data.totalChargingTime} seconds"
                 faultFlagTextView.text = "Fault Flag: ${data.faultFlag}"
                 chargeUpFlagTextView.text = "Charge Up Flag: ${data.chargeUpFlag}"
                 statusTextView.text = "Status: ${data.Status}"
