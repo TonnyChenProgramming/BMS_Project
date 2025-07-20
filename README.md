@@ -202,7 +202,8 @@ ________________________________________________________________________________
 ### 📱 3. Software Layer — Android App (Kotlin + Firebase)
 
 <img width="473" height="301" alt="image" src="https://github.com/user-attachments/assets/a1df82b9-df43-4039-a13a-79dc5980b9d2" />
-![WhatsApp Image 2025-07-20 at 20 02 25_7747a9ed](https://github.com/user-attachments/assets/26e9450c-e3ad-4623-ba0e-c91203ee06c3)
+![showdiagram](https://github.com/user-attachments/assets/f6255362-cdf4-44d8-b738-fadfa6d65bf7)
+
 
 The Android app provides a real-time, user-friendly interface for monitoring the battery system remotely via Firebase.
 
