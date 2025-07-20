@@ -26,6 +26,7 @@ The Battery Monitoring System is designed using a **layered abstraction architec
 
 
 This layer includes all physical components that sense electrical signals, display system status, and control charging behavior. It forms the foundation of the entire Battery Management System (BMS).
+____________________________________________________________________________
 
 #### ✨ Key Components
 
@@ -81,6 +82,9 @@ This layer includes all physical components that sense electrical signals, displ
 
 -Enables real-time mobile monitoring via custom Android app
 
+____________________________________________________________________________
+
+
 ####⚡ Power Distribution
 
 #####🔋 Battery Charging
@@ -94,6 +98,8 @@ This layer includes all physical components that sense electrical signals, displ
 -STM32, sensors, display, buzzer, and Wi-Fi module powered by STM32 onboard LDO regulator
 
 -LDO is fed from the DC rail or battery, ensuring system remains operational when charging or running standalone
+____________________________________________________________________________
+
 
 #### ❌ Design Trade-Off
 ##### EEPROM (AT24C16) Excluded
