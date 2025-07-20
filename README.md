@@ -25,41 +25,77 @@ The Battery Monitoring System is designed using a **layered abstraction architec
 <img width="591" height="380" alt="image" src="https://github.com/user-attachments/assets/7970520d-5623-4b71-b136-303bf5ae3560" />![hardwareImage](https://github.com/user-attachments/assets/20893ba3-f8e3-4bd0-a3c0-462a59af3dd4)
 
 
-🧩 Components
-Component	Function
-ACS712 Current Sensor	Measures the battery’s charging current using the Hall effect. Outputs analog voltage to MCU.
-Voltage Divider	Reduces battery voltage to an STM32-safe ADC input range.
-NTC Thermistor	Detects ambient or battery temperature and feeds analog signal to STM32 ADC.
-OLED Display (I2C)	Displays system metrics like SoC, current, voltage, and status indicators.
-Open-Drain Push Button	Allows manual interaction for triggering uploads or resets.
-Buzzer	Emits alarms when faults or abnormal conditions (e.g., overtemp) are detected.
-TP4050 Charging Module	Provides regulated charging from USB Type-C to the lithium battery.
-Battery Holder	Houses 18650 Li-ion cell(s) under monitoring and charge control.
+This layer includes all physical components that sense electrical signals, output system status, and manage charging. It forms the foundation of the entire Battery Management System (BMS).
 
-❌ Note: EEPROM (AT24C16) was originally planned for persistent metric storage (e.g., total charge time/cycles), but has been removed from the system due to hardware limitations.
+Key Components
+ACS712 Current Sensor
 
-🔌 Power and Signal Flow
-DC Power Rail: A single regulated DC line from the TP4050 supplies power to the STM32 and all peripherals.
+Measures real-time charging current via Hall effect.
 
-Analog Signals: Current (V_current), voltage (V_voltage), and temperature (V_temp) values are sent to STM32 ADC pins.
+Outputs analog voltage to STM32 ADC for current calculation.
 
-I2C Bus: Used for OLED communication.
+Voltage Divider
 
-GPIO/UART:
+Steps down battery voltage (<3.3V) for safe ADC sampling.
 
-UART connects to the Wi-Fi module.
+NTC Thermistor (10kΩ)
 
-GPIO controls the buzzer and reads push button input.
+Senses battery surface temperature.
 
-📋 Summary
-This hardware stack achieves:
+Converts temperature to analog voltage for STM32 ADC.
 
-Accurate real-time sensing of battery parameters.
+OLED Display (0.96", I2C)
 
-Visual and audible feedback for end users.
+Shows system status: voltage, current, SoC, SoH, and temperature.
 
-Clean modular charging and protection architecture.
+Push Button (Open-Drain)
 
-Simplification of the design by removing EEPROM to prioritize stability and available I2C bandwidth.
+Triggers manual data upload or reset event.
+
+Wired to STM32 GPIO with internal pull-up.
+
+Buzzer
+
+Sounds alerts on fault or over-temperature conditions.
+
+TP4050 Charging Module
+
+Charges a single 18650 Li-ion battery via USB Type-C.
+
+Battery is only component charged through this module.
+
+18650 Battery Holder
+
+Houses and connects the battery for safe charging and monitoring.
+
+ESP8266 NodeMCU Wi-Fi Module
+
+Receives battery data via UART from STM32.
+
+Pushes data to Firebase Realtime Database.
+
+Connects wirelessly to mobile app for real-time monitoring.
+
+Power Distribution
+🔋 Battery Charging
+
+The TP4050 module charges the 18650 battery only.
+
+ACS712 sensor monitors charging current in real time.
+
+⚡ System Power Supply
+
+All components (STM32, sensors, display, Wi-Fi module, buzzer) are powered by the 3.3V output of STM32’s onboard LDO regulator.
+
+The regulator draws from battery or external DC input to ensure continuous operation.
+
+Design Note
+❌ EEPROM (AT24C16) Removed
+
+Originally planned for logging charge cycles and run time.
+
+Removed due to I2C bus limitations and space constraints.
+
+
 
 
