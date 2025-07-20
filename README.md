@@ -109,4 +109,65 @@ ____________________________________________________________________________
 Removed due to I2C bus congestion and hardware layout constraints
 
 
+_____________________________________________________________________________
+### 2.💻 Firmware Layer – data acquisition and computation 
+This layer runs on the STM32F407 microcontroller and is responsible for data acquisition, control logic, and real-time task management. It orchestrates all sensor readings, computations, and communications using FreeRTOS.
+
+### 2.1 STM32 HAL Code
+
+#### 🔹 Core Features
+#####Dual ADC Sampling via DMA
+
+-Simultaneously samples battery voltage and charging current using two ADC channels with DMA.
+
+-Ensures efficient, non-blocking data collection.
+
+##### Periodic Temperature Monitoring
+
+-Reads NTC thermistor every 10 seconds.
+
+-Used for thermal safety control and display updates.
+
+##### Real-time SoC and SoH Computation
+
+-Calculates State of Charge (%) and estimates State of Health (%) based on usage history.
+
+-Logic executed in a dedicated processing task.
+
+##### OLED Display Output (I2C)
+
+-Displays live system stats like voltage, current, temperature, SoC, SoH, and fault flags.
+
+-Display refreshes are throttled to avoid I2C bus congestion.
+
+##### Fault Detection and Buzzer Alerts
+
+-Continuously checks for abnormal conditions (e.g., over-temp, short circuit).
+
+-Triggers buzzer and safety logic when necessary.
+
+##### UART Output (JSON Format)
+
+-Periodically sends system status to ESP8266 via UART in JSON format.
+
+-Enables seamless cloud integration.
+
+##### FreeRTOS Multitasking
+
+Tasks separated by functionality:
+
+-SamplingTask for ADC + temperature
+
+-ProcessTask for SoC/SoH computation
+
+-DisplayTask for OLED
+
+-UploadTask for UART output
+
+-BuzzerTask for audible alerts
+
+Shared data protected using xSemaphore
+
+
+
 
