@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#DFFFD6">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:id="@+id/batteryNameTextView"
+                android:text="BatteryName:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/stateOfChargeTextView"
+                android:text="State of Charge:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/stateOfHealthTextView"
+                android:text="State of Health:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/averageVoltageTextView"
+                android:text="Average Voltage:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/averageCurrentTextView"
+                android:text="Average Current:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/averageTemperatureTextView"
+                android:text="Average Temperature:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/totalChargeCyclesTextView"
+                android:text="Total Charge Cycles:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/totalChargingTimeTextView"
+                android:text="Total Charging Time:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/faultFlagTextView"
+                android:text="Fault Flag:"
+                style="@style/BmsTextStyle" />
+
+            <TextView
+                android:id="@+id/chargeUpFlagTextView"
+                android:text="Charge Up Flag:"
+                style="@style/BmsTextStyle" />
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

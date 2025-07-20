@@ -1,2 +1,0 @@
-../Core/Src/eeprom_at24c16/epprom_processings.c:12:19:EEPROM_WritePage	48	static
-../Core/Src/eeprom_at24c16/epprom_processings.c:33:19:EEPROM_ReadPage	48	static
