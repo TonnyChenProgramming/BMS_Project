@@ -244,8 +244,21 @@ The Android app provides a real-time, user-friendly interface for monitoring the
 
 -Uses a listener pattern to decouple networking from UI logic
 
+________________________________________________________________________________
+## 📂 Directory Structure
 
+<img width="320" height="150" alt="image" src="https://github.com/user-attachments/assets/735b6396-b539-45c2-b545-fee1469f85c3" />
 
+### ✅ What’s Inside
+Firmware/: Contains your STM32CubeIDE project with FreeRTOS integration and all STM32-specific code.
+
+ESP8266_Firmware/: Arduino sketch for the NodeMCU to receive UART data and push it to Firebase.
+
+AndroidApp/: Android Studio project that listens to Firebase and updates UI.
+
+Docs/: Place architecture diagrams, flowcharts, and any helpful visuals here.
+
+README.md: This file — the central documentation hub for your project.
 
 
 
