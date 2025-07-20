@@ -85,15 +85,15 @@ ____________________________________________________________________________
 ____________________________________________________________________________
 
 
-####⚡ Power Distribution
+#### ⚡ Power Distribution
 
-#####🔋 Battery Charging
+##### 🔋 Battery Charging
 
 -TP4050 module charges only the 18650 battery
 
 -Charging current is monitored via ACS712
 
-#####⚡ System Supply (3.3V)
+##### ⚡ System Supply (3.3V)
 
 -STM32, sensors, display, buzzer, and Wi-Fi module powered by STM32 onboard LDO regulator
 
