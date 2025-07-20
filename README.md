@@ -9,7 +9,7 @@ A real-time Battery Management System implemented on the STM32F407 Discovery boa
 - OLED display output for live system stats
 - Fault detection and buzzer alerts
 - UART output (JSON format) for Wi-Fi module
-- **Wi-Fi integration via ESP8266**
-- **Firebase Realtime Database push**
-- **Android app for real-time monitoring**
+- Wi-Fi integration via ESP8266
+- Firebase Realtime Database push
+- Android app for real-time monitoring
 - Multi-tasking using FreeRTOS
