@@ -22,7 +22,7 @@ The Battery Monitoring System is designed using a **layered abstraction architec
 ### 🪛 1. Hardware Layer – Physical Interface & Sensing
 
 
-<img width="591" height="380" alt="image" src="https://github.com/user-attachments/assets/7970520d-5623-4b71-b136-303bf5ae3560" />![hardwareImage](https://github.com/user-attachments/assets/20893ba3-f8e3-4bd0-a3c0-462a59af3dd4)
+<img width="692" height="392" alt="image" src="https://github.com/user-attachments/assets/7970520d-5623-4b71-b136-303bf5ae3560" />![hardwareImage](https://github.com/user-attachments/assets/20893ba3-f8e3-4bd0-a3c0-462a59af3dd4)
 
 
 This layer includes all physical components that sense electrical signals, display system status, and control charging behavior. It forms the foundation of the entire Battery Management System (BMS).
