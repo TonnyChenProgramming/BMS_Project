@@ -17,7 +17,7 @@ A real-time Battery Management System implemented on the STM32F407 Discovery boa
 ## 🧭 System Architecture
 The Battery Monitoring System is designed using a **layered abstraction architecture**, dividing the system into three key levels: **Hardware Layer**, **Firmware Layer**, and **Software Layer**. This modular structure ensures high cohesion within layers and low coupling between them, making the system robust, scalable, and easy to debug.
 
-<img width="346" height="188" alt="image" src="https://github.com/user-attachments/assets/c217356d-dcca-4623-acdb-66be682c279c" />
+<img width="692" height="392" alt="image" src="https://github.com/user-attachments/assets/c217356d-dcca-4623-acdb-66be682c279c" />
 
 ### 🪛 1. Hardware Layer – Physical Interface & Sensing
 
