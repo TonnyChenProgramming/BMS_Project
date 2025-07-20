@@ -27,76 +27,78 @@ The Battery Monitoring System is designed using a **layered abstraction architec
 
 This layer includes all physical components that sense electrical signals, display system status, and control charging behavior. It forms the foundation of the entire Battery Management System (BMS).
 
-✨ Key Components
-🔌 ACS712 Current Sensor
+#### ✨ Key Components
 
-Measures charging current via Hall effect
+##### 🔌 ACS712 Current Sensor
 
-Sends analog output to STM32 ADC for sampling
+-Measures charging current via Hall effect
 
-🔻 Voltage Divider
+-Sends analog output to STM32 ADC for sampling
 
-Steps down battery voltage to safe levels (<3.3V)
+##### 🔻 Voltage Divider
 
-Enables direct connection to STM32 ADC
+-Steps down battery voltage to safe levels (<3.3V)
 
-🌡️ NTC Thermistor (10kΩ)
+-Enables direct connection to STM32 ADC
 
-Detects battery surface temperature
+##### 🌡️ NTC Thermistor (10kΩ)
 
-Outputs analog voltage proportional to temperature
+-Detects battery surface temperature
 
-🖥️ OLED Display (I2C)
+-Outputs analog voltage proportional to temperature
 
-Shows real-time stats: voltage, current, SoC, SoH, temperature
+##### 🖥️ OLED Display (I2C)
 
-🔘 Open-Drain Push Button
+-Shows real-time stats: voltage, current, SoC, SoH, temperature
 
-Triggers manual data upload or reset
+##### 🔘 Open-Drain Push Button
 
-Connected to GPIO with internal pull-up
+-Triggers manual data upload or reset
 
-🔊 Buzzer
+-Connected to GPIO with internal pull-up
 
-Emits alert sounds on over-temperature or fault conditions
+##### 🔊 Buzzer
 
-⚙️ TP4050 Charging Module
+-Emits alert sounds on over-temperature or fault conditions
 
-Charges 18650 battery via USB Type-C
+##### ⚙️ TP4050 Charging Module
 
-Battery is the only component connected to this charger
+-Charges 18650 battery via USB Type-C
 
-🔋 18650 Battery + Holder
+-Battery is the only component connected to this charger
 
-Provides main power storage
+##### 🔋 18650 Battery + Holder
 
-Connected through current sensor and voltage divider
+-Provides main power storage
 
-📶 ESP8266 NodeMCU Wi-Fi Module
+-Connected through current sensor and voltage divider
 
-Communicates with STM32 via UART
+##### 📶 ESP8266 NodeMCU Wi-Fi Module
 
-Pushes data to Firebase Realtime Database
+-Communicates with STM32 via UART
 
-Enables real-time mobile monitoring via custom Android app
+-Pushes data to Firebase Realtime Database
 
-⚡ Power Distribution
-🔋 Battery Charging
+-Enables real-time mobile monitoring via custom Android app
 
-TP4050 module charges only the 18650 battery
+####⚡ Power Distribution
 
-Charging current is monitored via ACS712
+#####🔋 Battery Charging
 
-⚡ System Supply (3.3V)
+-TP4050 module charges only the 18650 battery
 
-STM32, sensors, display, buzzer, and Wi-Fi module powered by STM32 onboard LDO regulator
+-Charging current is monitored via ACS712
 
-LDO is fed from the DC rail or battery, ensuring system remains operational when charging or running standalone
+#####⚡ System Supply (3.3V)
 
-❌ Design Trade-Off
-EEPROM (AT24C16) Excluded
+-STM32, sensors, display, buzzer, and Wi-Fi module powered by STM32 onboard LDO regulator
 
-Initially planned for persistent data logging (e.g. charge cycles, runtime)
+-LDO is fed from the DC rail or battery, ensuring system remains operational when charging or running standalone
+
+#### ❌ Design Trade-Off
+##### EEPROM (AT24C16) Excluded
+
+-Initially planned for persistent data logging (e.g. charge cycles, runtime)
 
 Removed due to I2C bus congestion and hardware layout constraints
 
