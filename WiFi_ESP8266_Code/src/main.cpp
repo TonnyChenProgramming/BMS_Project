@@ -5,7 +5,7 @@
 
 // Wi-Fi credentials
 const char* ssid = "Tonny";
-const char* password = "38767475";
+const char* password = "12345";
 
 // Firebase Realtime Database
 const char* firebase_host = "batterymanagingsystem-default-rtdb.asia-southeast1.firebasedatabase.app";
